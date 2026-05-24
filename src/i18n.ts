@@ -152,15 +152,15 @@ const pt: Record<MessageKey, string> = {
 };
 
 function activeMessages(): Record<MessageKey, string> {
-  return vscode.env.language.toLowerCase().startsWith('en') ? en : pt;
+  return vscode.env.language.toLowerCase().startsWith('pt') ? pt : en;
 }
 
 export function currentHtmlLang(): string {
-  return vscode.env.language.toLowerCase().startsWith('en') ? 'en' : 'pt-BR';
+  return vscode.env.language.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en';
 }
 
 export function t(key: MessageKey, params: MessageParams = {}): string {
-  const template = activeMessages()[key] ?? pt[key];
+  const template = activeMessages()[key] ?? en[key];
   return Object.entries(params).reduce(
     (message, [paramKey, value]) => message.split(`{${paramKey}}`).join(String(value)),
     template,
