@@ -80,12 +80,13 @@ function removeFile(filePath: string): void {
   }
 }
 
-function configureValidSettings(): void {
+function configureValidSettings(defaultLanguage = 'pt'): void {
   const values: Record<string, string> = {
     serverUrl: 'https://weblate.example.com',
     authToken: '',
     project: 'project-slug',
     component: 'component-slug',
+    defaultLanguage,
   };
 
   mockWorkspace.getConfiguration.mockReturnValue({
@@ -190,6 +191,7 @@ describe('Fastlate extension integration flow', () => {
           authToken: 'secret-token',
           project: 'project-slug',
           component: 'component-slug',
+          defaultLanguage: 'pt',
         },
         'pt',
       );
@@ -236,7 +238,7 @@ describe('Fastlate extension integration flow', () => {
     }));
     expect(mockSecrets.store).toHaveBeenCalledWith('fastlate.authToken', 'new-secret-token');
     expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-      'token salvo',
+      'Fastlate: token salvo.',
     );
   });
 
@@ -340,6 +342,7 @@ describe('Fastlate extension integration flow', () => {
   });
 
   it('creates keys from Portuguese when Portuguese is not the first language column', async () => {
+    configureValidSettings('pt_BR');
     const csvPath = createCsvFile(
       'label,English,Português\ncode,en,pt_BR\nbutton.save,Save,Salvar\nbutton.cancel,Cancel,Cancelar',
     );
@@ -369,28 +372,21 @@ describe('Fastlate extension integration flow', () => {
     }
   });
 
-  it('does not create keys when the CSV has no Portuguese language column', async () => {
+  it('shows an error when the CSV has no default language column', async () => {
     const csvPath = createCsvFile(
       'label,English,Español\ncode,en,es\nbutton.save,Save,Guardar\nbutton.cancel,Cancel,Cancelar',
     );
     mockWindow.showOpenDialog.mockResolvedValue([{ fsPath: csvPath }]);
-    mockFindTermId
-      .mockResolvedValueOnce(201)
-      .mockResolvedValueOnce(202)
-      .mockResolvedValueOnce(301)
-      .mockResolvedValueOnce(302);
-    mockEditTerm.mockResolvedValue({ kind: 'success' });
-
     try {
       await registeredImportCommand()();
 
-      expect(WeblateHttpClient).toHaveBeenCalledWith(expect.any(Object), 'en');
-      expect(WeblateHttpClient).toHaveBeenCalledWith(expect.any(Object), 'es');
+      expect(mockPreviewShow).not.toHaveBeenCalled();
+      expect(WeblateHttpClient).not.toHaveBeenCalled();
       expect(mockCreateKey).not.toHaveBeenCalled();
-      expect(mockFindTermId).toHaveBeenCalledTimes(4);
-      expect(mockEditTerm).toHaveBeenCalledTimes(4);
-      expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
-        expect.stringContaining('Total: 4 | Criados: 0 | Somente editados: 4 | Erros: 0'),
+      expect(mockFindTermId).not.toHaveBeenCalled();
+      expect(mockEditTerm).not.toHaveBeenCalled();
+      expect(mockWindow.showErrorMessage).toHaveBeenCalledWith(
+        expect.stringContaining('coluna com idioma padrão não encontrada'),
       );
     } finally {
       removeFile(csvPath);
@@ -398,6 +394,7 @@ describe('Fastlate extension integration flow', () => {
   });
 
   it('creates keys only through pt_BR when languages start at column A', async () => {
+    configureValidSettings('pt_BR');
     const csvPath = createCsvFile(
       'Português;Inglês;Espanhol;Francês\npt_BR;en;es;fr\nbola;ball;pelota;balle',
     );

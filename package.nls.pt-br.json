@@ -1,0 +1,11 @@
+{
+  "extension.description": "Extensão VSCode para importar traduções no Weblate",
+  "configuration.serverUrl.description": "URL base do servidor Weblate (ex.: https://weblate.example.com)",
+  "configuration.project.description": "Slug do projeto Weblate",
+  "configuration.component.description": "Slug do componente Weblate",
+  "configuration.defaultLanguage.description": "Código obrigatório do idioma padrão. O CSV deve conter esta coluna; ela serve como idioma fonte das chaves e é a única que cria chaves via POST (ex.: pt_BR)",
+  "command.importTranslations.title": "Fastlate: Importar Traduções",
+  "command.configureToken.title": "Fastlate: Configurar Token",
+  "command.removeToken.title": "Fastlate: Remover Token",
+  "view.sidebar.name": "Importar Traduções"
+}

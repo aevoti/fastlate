@@ -20,6 +20,7 @@ const config: WeblateConfiguration = {
   authToken: 'secret-token',
   project: 'project-slug',
   component: 'component-slug',
+  defaultLanguage: 'pt_BR',
 };
 
 const nonBlankTextArb: fc.Arbitrary<string> = fc

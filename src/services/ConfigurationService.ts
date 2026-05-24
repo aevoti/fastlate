@@ -6,6 +6,7 @@ const REQUIRED_SETTINGS_FIELDS: ReadonlyArray<keyof Omit<WeblateConfiguration, '
   'serverUrl',
   'project',
   'component',
+  'defaultLanguage',
 ];
 
 /**
@@ -36,6 +37,18 @@ function isValidUrl(value: string): boolean {
   }
 }
 
+function readFastlateSetting(field: keyof Omit<WeblateConfiguration, 'authToken'>): string | undefined {
+  const scopedConfig = vscode.workspace.getConfiguration('fastlate');
+  const scopedValue = scopedConfig.get<string>(field);
+
+  if (!isBlank(scopedValue)) {
+    return scopedValue;
+  }
+
+  const rootConfig = vscode.workspace.getConfiguration();
+  return rootConfig.get<string>(`fastlate.${field}`);
+}
+
 /**
  * Reads and validates Fastlate settings plus the auth token loaded from SecretStorage.
  *
@@ -45,10 +58,8 @@ function isValidUrl(value: string): boolean {
  */
 export class ConfigurationService {
   readConfiguration(authToken: string | undefined): Result<WeblateConfiguration, ConfigurationError> {
-    const config = vscode.workspace.getConfiguration('fastlate');
-
     for (const field of REQUIRED_SETTINGS_FIELDS) {
-      const value = config.get<string>(field);
+      const value = readFastlateSetting(field);
       if (isBlank(value)) {
         return { ok: false, error: { kind: 'missing_field', field } };
       }
@@ -62,9 +73,10 @@ export class ConfigurationService {
     }
     const trimmedAuthToken = authToken.trim();
 
-    const serverUrl = config.get<string>('serverUrl') as string;
-    const project = config.get<string>('project') as string;
-    const component = config.get<string>('component') as string;
+    const serverUrl = readFastlateSetting('serverUrl') as string;
+    const project = readFastlateSetting('project') as string;
+    const component = readFastlateSetting('component') as string;
+    const defaultLanguage = readFastlateSetting('defaultLanguage') as string;
 
     if (!isValidUrl(serverUrl)) {
       return { ok: false, error: { kind: 'invalid_url', value: serverUrl } };
@@ -72,7 +84,7 @@ export class ConfigurationService {
 
     return {
       ok: true,
-      value: { serverUrl, authToken: trimmedAuthToken, project, component },
+      value: { serverUrl, authToken: trimmedAuthToken, project, component, defaultLanguage },
     };
   }
 }

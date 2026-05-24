@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { LanguageHeader, ParseResult, Term } from '../types/index';
+import { currentHtmlLang, t } from '../i18n';
 
 type PreviewState =
   | { kind: 'ready' }
@@ -40,7 +41,7 @@ export class PreviewPanel {
 
       this.panel = vscode.window.createWebviewPanel(
         'fastlatePreview',
-        'Fastlate — Preview de Importação',
+        `Fastlate - ${t('preview.title')}`,
         vscode.ViewColumn.One,
         {
           enableScripts: true,
@@ -153,17 +154,17 @@ export class PreviewPanel {
     const importDisabled = state.kind === 'ready' ? '' : ' disabled';
     const cancelDisabled = state.kind === 'importing' ? ' disabled' : '';
     const importButtonText = this._importButtonText(state);
-    const cancelButtonText = state.kind === 'ready' || state.kind === 'importing' ? 'Cancelar' : 'Fechar';
+    const cancelButtonText = state.kind === 'ready' || state.kind === 'importing' ? t('preview.cancel') : t('preview.close');
     const statusClass = this._statusClass(state);
     const statusText = this._statusText(state);
 
     return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="${currentHtmlLang()}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline';" />
-  <title>Preview de Importação</title>
+  <title>${t('preview.title')}</title>
   <style>
     body {
       font-family: var(--vscode-font-family, sans-serif);
@@ -267,18 +268,18 @@ export class PreviewPanel {
   </style>
 </head>
 <body>
-  <h1>Preview de Importação</h1>
+  <h1>${t('preview.title')}</h1>
 
   <div class="meta">
-    <span><strong>Idiomas:</strong> ${this._escapeHtml(languageSummary)}</span>
+    <span><strong>${t('preview.languages')}:</strong> ${this._escapeHtml(languageSummary)}</span>
   </div>
 
-  <div class="total">Total de terms: ${totalTerms}</div>
+  <div class="total">${t('preview.totalTerms', { total: totalTerms })}</div>
 
   <table>
     <thead>
       <tr>
-        <th>Chave</th>
+        <th>${t('preview.key')}</th>
         ${tableHeaders}
       </tr>
     </thead>
@@ -302,31 +303,31 @@ export class PreviewPanel {
 
     function setImporting() {
       importSubmitted = true;
-      importButton.textContent = 'Importando...';
+      importButton.textContent = '${t('preview.importing')}';
       importButton.setAttribute('disabled', 'disabled');
       cancelButton.setAttribute('disabled', 'disabled');
       importStatus.className = 'status';
-      importStatus.textContent = 'Importando termos...';
+      importStatus.textContent = '${t('preview.importingTerms')}';
     }
 
     function setResult(message) {
       importSubmitted = true;
-      importButton.textContent = 'Concluído';
+      importButton.textContent = '${t('preview.done')}';
       importButton.setAttribute('disabled', 'disabled');
-      cancelButton.textContent = 'Fechar';
+      cancelButton.textContent = '${t('preview.close')}';
       cancelButton.removeAttribute('disabled');
       importStatus.className = 'status done';
-      importStatus.textContent = message || 'Importação concluída.';
+      importStatus.textContent = message || '${t('preview.importDone')}';
     }
 
     function setError(message) {
       importSubmitted = true;
-      importButton.textContent = 'Erro';
+      importButton.textContent = '${t('preview.error')}';
       importButton.setAttribute('disabled', 'disabled');
-      cancelButton.textContent = 'Fechar';
+      cancelButton.textContent = '${t('preview.close')}';
       cancelButton.removeAttribute('disabled');
       importStatus.className = 'status error';
-      importStatus.textContent = message || 'Importação finalizada com erro.';
+      importStatus.textContent = message || '${t('preview.importFailed')}';
     }
 
     importButton.addEventListener('click', function () {
@@ -360,18 +361,18 @@ export class PreviewPanel {
 
   private _importButtonText(state: PreviewState): string {
     if (state.kind === 'importing') {
-      return 'Importando...';
+      return t('preview.importing');
     }
 
     if (state.kind === 'result') {
-      return 'Concluído';
+      return t('preview.done');
     }
 
     if (state.kind === 'error') {
-      return 'Erro';
+      return t('preview.error');
     }
 
-    return 'Importar';
+    return t('preview.import');
   }
 
   private _statusClass(state: PreviewState): string {
@@ -388,7 +389,7 @@ export class PreviewPanel {
 
   private _statusText(state: PreviewState): string {
     if (state.kind === 'importing') {
-      return 'Importando termos...';
+      return t('preview.importingTerms');
     }
 
     if (state.kind === 'result' || state.kind === 'error') {

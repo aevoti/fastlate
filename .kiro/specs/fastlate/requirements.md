@@ -16,7 +16,7 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 - **Parser**: Componente responsável por ler e interpretar arquivos de planilha
 - **HTTP_Client**: Componente responsável por enviar requisições HTTP ao Weblate_API
 - **Progress_Indicator**: Elemento de UI do VSCode que exibe o progresso do Import_Job ao usuário
-- **Configuration**: Conjunto de parâmetros necessários para conectar ao Weblate (URL, token de autenticação, projeto e componente). O idioma alvo vem do `Language_Header` da planilha.
+- **Configuration**: Conjunto de parâmetros necessários para conectar ao Weblate (URL, token de autenticação, projeto, componente e idioma padrão). O idioma padrão é obrigatório, é configurado em `fastlate.defaultLanguage`, deve existir como coluna no CSV, serve como idioma fonte das chaves e é o único idioma que realiza criação via `POST`.
 - **Language_Header**: As duas primeiras linhas da planilha que definem o idioma — linha 1 contém o nome do idioma (ex.: `Português`) e linha 2 contém o código do idioma (ex.: `pt`)
 - **Preview_Panel**: Painel do VSCode que exibe os dados lidos da planilha antes de iniciar o Import_Job, permitindo ao usuário confirmar os valores antes do envio
 - **Sidebar_View**: Visualização lateral do VSCode na Activity Bar que mostra o estado da configuração e oferece acesso direto ao fluxo de importação
@@ -31,11 +31,12 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 
 #### Acceptance Criteria
 
-1. WHEN o Import_Job for iniciado, THE Extension SHALL ler as configurações de conexão não sensíveis (URL base do servidor, nome do projeto e nome do componente) a partir das configurações do VSCode (`settings.json`) e o token de autenticação a partir do `SecretStorage` do VSCode.
+1. WHEN o Import_Job for iniciado, THE Extension SHALL ler as configurações de conexão não sensíveis (URL base do servidor, nome do projeto, nome do componente e idioma padrão) a partir das configurações do VSCode (`settings.json`) e o token de autenticação a partir do `SecretStorage` do VSCode.
 2. IF qualquer configuração obrigatória estiver ausente ou contiver apenas espaços em branco, THEN THE Extension SHALL exibir uma mensagem de erro descritiva indicando qual configuração está faltando e interromper o Import_Job.
 3. WHEN o Import_Job for iniciado, THE Extension SHALL validar que a URL base do servidor começa com `http://` ou `https://` e contém um host não vazio.
 4. IF a URL base do servidor for inválida, THEN THE Extension SHALL exibir uma mensagem de erro descritiva identificando o valor inválido e interromper o Import_Job.
 5. O token deve ser mantido em segurança no `SecretStorage` do VSCode, configurado por comando com input de senha, e nunca exibido ou registrado em logs.
+6. WHEN o Import_Job for iniciado, THE Extension SHALL validar que `fastlate.defaultLanguage` contém um código de idioma não vazio, pois somente esse idioma pode realizar criação de chave via `POST`.
 
 ---
 
@@ -47,8 +48,8 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 
 1. WHEN o usuário acionar o comando de importação, THE Extension SHALL abrir um diálogo de seleção de arquivo filtrado para os formatos `.csv`.
 2. WHEN o usuário selecionar um arquivo cuja extensão corresponda aos formatos aceitos, THE Parser SHALL ler o arquivo e extrair os termos de tradução.
-3. THE Parser SHALL interpretar a linha 1 da planilha como o nome do idioma (Language_Header) e a linha 2 como o código do idioma (Language_Header), sendo que as linhas de dados com os Terms começam a partir da linha 3. Exemplo: célula A1 = `Português`, célula A2 = `pt`.
-4. THE Extension SHALL usar o código de idioma lido da linha 2 da planilha (`Language_Header.code`) como o idioma alvo nas requisições ao Weblate.
+3. THE Parser SHALL interpretar a linha 1 da planilha como os nomes dos idiomas e a linha 2 como os códigos dos idiomas, sendo que as linhas de dados com os Terms começam a partir da linha 3.
+4. THE Extension SHALL usar os códigos de idioma lidos da linha 2 da planilha (`Language_Header.code`) como idiomas alvo nas requisições ao Weblate.
 5. WHEN o Parser processar um arquivo CSV, THE Parser SHALL detectar automaticamente o delimitador utilizado (vírgula `,` ou ponto-e-vírgula `;`).
 6. IF o arquivo selecionado estiver corrompido ou não puder ser lido, THEN THE Parser SHALL retornar um erro descritivo e interromper o Import_Job.
 7. IF o arquivo não contiver nenhum Term após a linha 2 (Language_Header), THEN THE Extension SHALL exibir uma mensagem informando que a planilha está vazia e interromper o Import_Job.
@@ -64,10 +65,12 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 
 #### Acceptance Criteria
 
-1. THE Parser SHALL identificar a coluna de chave como a primeira coluna da planilha e a coluna de valor como a segunda coluna da planilha, a partir da linha 3 (após o Language_Header).
-2. IF a planilha não possuir pelo menos duas colunas, THEN THE Extension SHALL exibir uma mensagem de erro indicando que a estrutura da planilha é inválida e interromper o Import_Job.
-3. WHEN uma linha da planilha (a partir da linha 3) possuir a coluna de chave vazia, THE Extension SHALL ignorar essa linha, registrar um aviso no canal de saída "Fastlate" incluindo o número da linha, e prosseguir para a próxima linha.
-4. WHEN uma linha da planilha (a partir da linha 3) possuir a coluna de valor vazia, THE Extension SHALL ignorar essa linha, registrar um aviso no canal de saída "Fastlate" incluindo o número da linha, e prosseguir para a próxima linha.
+1. THE Parser SHALL suportar CSVs com coluna dedicada de chave na coluna A e colunas de idioma a partir da coluna B.
+2. THE Parser SHALL suportar CSVs sem coluna dedicada de chave, onde todas as colunas a partir da coluna A são colunas de idioma.
+3. WHEN a planilha não tiver coluna dedicada de chave, THE Extension SHALL identificar a chave de cada linha usando o valor da coluna cujo `Language_Header.code` corresponde a `fastlate.defaultLanguage`.
+4. IF a planilha não contiver uma coluna cujo código corresponda a `fastlate.defaultLanguage`, THEN THE Extension SHALL exibir o erro "Coluna com idioma padrão não encontrada" e interromper o Import_Job antes de qualquer chamada ao Weblate.
+5. WHEN uma linha da planilha (a partir da linha 3) possuir a chave vazia, THE Extension SHALL ignorar essa linha, registrar um aviso no canal de saída "Fastlate" incluindo o número da linha, e prosseguir para a próxima linha.
+6. WHEN uma linha da planilha (a partir da linha 3) possuir todos os valores de idioma vazios, THE Extension SHALL ignorar essa linha, registrar um aviso no canal de saída "Fastlate" incluindo o número da linha, e prosseguir para a próxima linha.
 
 ---
 
@@ -77,8 +80,8 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 
 #### Acceptance Criteria
 
-1. WHEN o Parser concluir a leitura de uma planilha válida, THE Extension SHALL exibir um Preview_Panel mostrando: o nome do idioma (linha 1), o código do idioma (linha 2) e a lista de Terms extraídos (chave e valor de cada linha).
-2. THE Preview_Panel SHALL exibir os Terms em formato de tabela com duas colunas: "Chave" e "Valor".
+1. WHEN o Parser concluir a leitura de uma planilha válida, THE Extension SHALL exibir um Preview_Panel mostrando os idiomas declarados, a lista de Terms extraídos e a chave calculada para cada linha.
+2. THE Preview_Panel SHALL exibir os Terms em formato de tabela com a coluna "Chave" e uma coluna de valor para cada idioma declarado.
 3. THE Preview_Panel SHALL exibir o total de Terms lidos acima da tabela.
 4. WHEN o Preview_Panel estiver visível, THE Extension SHALL apresentar dois botões de ação: "Importar" para iniciar o Import_Job e "Cancelar" para descartar a importação.
 5. IF o usuário clicar em "Cancelar" no Preview_Panel, THEN THE Extension SHALL fechar o Preview_Panel e não iniciar o Import_Job.
@@ -107,13 +110,14 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 
 #### Acceptance Criteria
 
-1. WHEN o Import_Job for iniciado com uma lista de Terms válida, THE HTTP_Client SHALL enviar uma requisição POST ao endpoint de criação de termos do Weblate_API para cada Term da lista sequencialmente.
+1. WHEN o Import_Job for iniciado com uma lista de Terms válida e a planilha contiver a coluna de `fastlate.defaultLanguage`, THE HTTP_Client SHALL enviar uma requisição POST ao endpoint de criação de termos do Weblate_API para cada Term da lista sequencialmente usando esse idioma.
 2. THE HTTP_Client SHALL incluir o token de autenticação no cabeçalho `Authorization` de cada requisição.
 3. WHEN o Weblate_API retornar status HTTP 201 para uma requisição de criação, THE Extension SHALL considerar o Term como criado com sucesso, marcá-lo como "criado" para o resumo final, e prosseguir para a etapa de edição.
 4. IF o Weblate_API retornar status HTTP 400 com qualquer mensagem no corpo da resposta indicando que a chave já existe (ex.: contém "already exist", "Chave já criada" ou "Chave já existe"), THEN THE Extension SHALL registrar um aviso, marcar o Term como "já existente", não contabilizá-lo como erro, e prosseguir diretamente para a etapa de edição do Term.
 5. IF o Weblate_API retornar status HTTP 400 por outro motivo que não seja chave já existente, THEN THE Extension SHALL registrar o erro com a chave do Term e o motivo, contabilizá-lo como erro no resumo final, e prosseguir para o próximo Term sem interromper o Import_Job.
 6. IF o Weblate_API retornar status HTTP 401 ou 403, THEN THE Extension SHALL interromper o Import_Job imediatamente e exibir uma mensagem de erro de autenticação.
 7. IF o Weblate_API retornar status HTTP 5xx para uma requisição de criação, THEN THE HTTP_Client SHALL aplicar a lógica de retentativa definida no Requisito 7 antes de registrar o erro e prosseguir para o próximo Term.
+8. IF a planilha não contiver a coluna de `fastlate.defaultLanguage`, THEN THE Extension SHALL interromper a importação antes de enviar qualquer requisição ao Weblate.
 
 ---
 

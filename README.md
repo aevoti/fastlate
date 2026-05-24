@@ -60,6 +60,7 @@ Depois de instalar, configure estas opções do VSCode:
 - `fastlate.serverUrl`
 - `fastlate.project`
 - `fastlate.component`
+- `fastlate.defaultLanguage` (obrigatório; o CSV deve conter esta coluna, que serve como idioma fonte das chaves e é a única usada para criar chaves via `POST`)
 
 Configure o token com o comando `Fastlate: Configurar token`. O token é salvo no `SecretStorage` do VSCode, não no `settings.json`. Para remover o token salvo, use `Fastlate: Remover token`.
 
@@ -102,12 +103,13 @@ pt_BR;en;es;fr
 bola;ball;pelota;balle
 ```
 
-No formato somente com idiomas, o valor da coluna `pt` ou `pt_BR` é usado como chave no Weblate. No exemplo acima, `bola` é a chave.
+No formato somente com idiomas, o valor da coluna configurada em `fastlate.defaultLanguage` é usado como chave no Weblate. Se `fastlate.defaultLanguage` estiver configurado como `pt_BR`, no exemplo acima `bola` é a chave.
 
 Regras:
 
 - No formato com chave dedicada, a coluna A é a chave de tradução e as colunas B em diante são colunas de idioma.
 - No formato somente com idiomas, as colunas A em diante são colunas de idioma.
+- `fastlate.defaultLanguage` é obrigatório; o CSV deve conter uma coluna com esse código na linha 2. Essa coluna serve como idioma fonte das chaves e é o único idioma que cria chaves via `POST`.
 - A linha 1 deve conter o nome do idioma para cada coluna de idioma preenchida.
 - A linha 2 deve conter o código de idioma correspondente para cada coluna de idioma preenchida.
 - As linhas 3 em diante contêm chaves e valores de tradução.
@@ -118,11 +120,11 @@ O preview de importação mostra `Chave` mais uma coluna de valor para cada idio
 
 Fluxo de importação:
 
-- O Fastlate envia `POST` somente para criar a chave de origem no idioma principal `pt` ou `pt_BR`.
-- O corpo do `POST` de criação contém a chave e o valor principal em português.
+- O Fastlate envia `POST` somente para criar a chave de origem no idioma configurado em `fastlate.defaultLanguage`.
+- O corpo do `POST` de criação contém a chave e o valor da coluna do idioma padrão.
 - Se o Weblate retornar HTTP 400 com qualquer mensagem de resposta contendo `already exist`, o Fastlate registra um aviso e continua.
-- Se o CSV não tiver coluna `pt` ou `pt_BR`, o Fastlate não envia nenhum `POST` de criação de chave.
-- O Fastlate nunca envia `POST` de criação de chave para endpoints de idiomas não portugueses, como `en`, `es` ou `fr`.
+- Se o CSV não tiver uma coluna cujo código seja igual a `fastlate.defaultLanguage`, o Fastlate interrompe a importação com o erro `Coluna com idioma padrão não encontrada`.
+- O Fastlate nunca envia `POST` de criação de chave para endpoints de idiomas diferentes do idioma padrão configurado.
 - Para cada valor de idioma preenchido, o Fastlate pesquisa a chave exata naquele idioma e usa o ID da unidade retornado.
 - O Fastlate só envia `PATCH` depois que a chave exata é encontrada naquele idioma.
 - Se a chave exata não for encontrada para um idioma, o Fastlate ignora aquele valor e registra um erro.
@@ -135,11 +137,10 @@ flowchart TD
   B --> C["Mostrar preview somente leitura"]
   C --> D{"Usuário confirma a importação?"}
   D -- "Não" --> E["Cancelar sem chamadas de API"]
-  D -- "Sim" --> F{"Tem coluna pt ou pt_BR?"}
-  F -- "Sim" --> G["POST das chaves de origem apenas em pt/pt_BR"]
-  F -- "Não" --> H["Pular criação de chave"]
+  D -- "Sim" --> F{"Tem coluna do idioma padrão?"}
+  F -- "Sim" --> G["POST das chaves de origem apenas no idioma padrão"]
+  F -- "Não" --> H["Erro: coluna com idioma padrão não encontrada"]
   G --> I["Para cada coluna de idioma"]
-  H --> I
   I --> J["Para cada valor preenchido"]
   J --> K["GET da chave exata naquele idioma"]
   K --> L{"Chave exata encontrada?"}
@@ -161,7 +162,7 @@ flowchart TD
 - Fastlate: restaurou a criação via `POST` com valor principal antes da busca exata e do `PATCH`.
 - Fastlate: trata respostas HTTP 400 de chave duplicada do Weblate como avisos quando qualquer mensagem de resposta contém `already exist`.
 - Fastlate: aceita HTTP 200 e 201 do Weblate como respostas de criação de chave bem-sucedidas.
-- Fastlate: impede `POST` de criação de chave quando o CSV não tem coluna `pt` ou `pt_BR`.
+- Fastlate: especifica `fastlate.defaultLanguage` como idioma padrão configurável para localizar a coluna de chave e limitar o `POST` de criação.
 - Fastlate: atualizou a referência de CSV, parser, preview e fluxo de importação para aceitar várias colunas de idioma.
 - Fastlate: concluiu a cobertura da Property 3 do parser para filtragem de linhas inválidas e atualizou `fast-check` para `^4.8.0`.
 - Fastlate: adicionou cobertura unitária para o HTML somente leitura do `PreviewPanel`.

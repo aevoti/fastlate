@@ -8,6 +8,7 @@ import { WeblateHttpClient } from './http/WeblateHttpClient';
 import { FastlateLogger } from './services/FastlateLogger';
 import { TokenStorageService } from './services/TokenStorageService';
 import { AuthenticationError } from './types/errors';
+import { t } from './i18n';
 import type { ImportSummary, LanguageHeader, Term, WeblateConfiguration } from './types/index';
 
 // ---------------------------------------------------------------------------
@@ -16,9 +17,12 @@ import type { ImportSummary, LanguageHeader, Term, WeblateConfiguration } from '
 
 let logger: FastlateLogger | undefined;
 
-function isPrimaryLanguageCode(languageCode: string): boolean {
-  const normalized = languageCode.trim().toLowerCase().replace('-', '_');
-  return normalized === 'pt' || normalized === 'pt_br';
+function normalizeLanguageCode(languageCode: string): string {
+  return languageCode.trim().toLowerCase().replace('-', '_');
+}
+
+function isDefaultLanguageCode(languageCode: string, defaultLanguage: string): boolean {
+  return normalizeLanguageCode(languageCode) === normalizeLanguageCode(defaultLanguage);
 }
 
 function termsForLanguage(
@@ -51,18 +55,18 @@ function recordFailedKey(summary: ImportSummary, key: string): void {
 }
 
 function buildSummaryMessage(summary: ImportSummary): string {
-  const baseMessage =
-    `Fastlate: importação concluída. ` +
-    `Total: ${summary.total} | ` +
-    `Criados: ${summary.created} | ` +
-    `Somente editados: ${summary.onlyEdited} | ` +
-    `Erros: ${summary.errors}`;
+  const failedKeys =
+    summary.failedKeys.length === 0
+      ? ''
+      : ` | ${t('summary.failedKeys')}: ${summary.failedKeys.join(', ')}`;
 
-  if (summary.failedKeys.length === 0) {
-    return baseMessage;
-  }
-
-  return `${baseMessage} | Chaves com erro: ${summary.failedKeys.join(', ')}`;
+  return t('summary.done', {
+    total: summary.total,
+    created: summary.created,
+    onlyEdited: summary.onlyEdited,
+    errors: summary.errors,
+    failedKeys,
+  });
 }
 
 async function createPrimaryKeys(options: {
@@ -176,8 +180,8 @@ async function configureToken(
   const token = await vscode.window.showInputBox({
     ignoreFocusOut: true,
     password: true,
-    prompt: 'Informe o token de autenticação do Weblate.',
-    title: 'Fastlate: Configurar token',
+    prompt: t('token.prompt'),
+    title: t('token.title'),
   });
 
   if (token === undefined) {
@@ -185,13 +189,13 @@ async function configureToken(
   }
 
   if (token.trim().length === 0) {
-    await vscode.window.showErrorMessage('Fastlate: token vazio. Informe um token válido.');
+    await vscode.window.showErrorMessage(t('token.empty'));
     return;
   }
 
   await tokenStorage.storeToken(token);
   await sidebarProvider.refresh();
-  await vscode.window.showInformationMessage('token salvo');
+  await vscode.window.showInformationMessage(t('token.saved'));
 }
 
 async function removeToken(
@@ -200,7 +204,7 @@ async function removeToken(
 ): Promise<void> {
   await tokenStorage.deleteToken();
   await sidebarProvider.refresh();
-  await vscode.window.showInformationMessage('Fastlate: token removido do SecretStorage do VSCode.');
+  await vscode.window.showInformationMessage(t('token.removed'));
 }
 
 /**
@@ -235,10 +239,10 @@ async function runImportCommand(
     if (error.kind === 'missing_field') {
       message =
         error.field === 'authToken'
-          ? 'Fastlate: token ausente. Execute o comando "Fastlate: Configurar token" para salvá-lo com segurança.'
-          : `Fastlate: configuração incompleta — o campo "${error.field}" está ausente ou em branco. Configure-o em Configurações > Fastlate.`;
+          ? t('error.missingToken')
+          : t('error.missingConfig', { field: error.field });
     } else {
-      message = `Fastlate: URL do servidor inválida ("${error.value}"). A URL deve começar com http:// ou https:// e conter um host válido.`;
+      message = t('error.invalidUrl', { value: error.value });
     }
 
     log.error(message);
@@ -268,7 +272,7 @@ async function runImportCommand(
   // Step 3: Parse the CSV file (Requirements 2.2–2.7, 2.9, 3.1–3.4)
   // -------------------------------------------------------------------------
   const parser = new CsvParser();
-  const parseResult = parser.parseFile(filePath, log);
+  const parseResult = parser.parseFile(filePath, log, config.defaultLanguage);
 
   if (!parseResult.ok) {
     const { error } = parseResult;
@@ -276,22 +280,22 @@ async function runImportCommand(
 
     switch (error.kind) {
       case 'file_error':
-        message = `Fastlate: não foi possível ler o arquivo — ${error.message}`;
+        message = t('error.fileRead', { message: error.message });
         break;
       case 'missing_language_header':
-        message =
-          'Fastlate: o arquivo CSV não contém o cabeçalho de idioma. As linhas 1 e 2 devem conter o nome e o código do idioma.';
+        message = t('error.missingLanguageHeader');
+        break;
+      case 'missing_default_language_column':
+        message = t('error.missingDefaultLanguageColumn', { languageCode: error.languageCode });
         break;
       case 'insufficient_columns':
-        message =
-          'Fastlate: estrutura de planilha inválida — o arquivo deve ter pelo menos duas colunas (chave e valor).';
+        message = t('error.insufficientColumns');
         break;
       case 'empty_spreadsheet':
-        message =
-          'Fastlate: a planilha não contém nenhum term de tradução (linhas 3+ estão vazias).';
+        message = t('error.emptySpreadsheet');
         break;
       default:
-        message = 'Fastlate: erro desconhecido ao processar o arquivo CSV.';
+        message = t('error.unknownCsv');
     }
 
     log.error(message);
@@ -325,7 +329,7 @@ async function runImportCommand(
     summary = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: 'Fastlate: importando traduções…',
+        title: t('progress.importing'),
         cancellable: true,
       },
       async (progress, cancellationToken) => {
@@ -337,7 +341,7 @@ async function runImportCommand(
           failedKeys: [],
         };
         const primaryLanguageIndex = languageHeaders.findIndex((language) =>
-          isPrimaryLanguageCode(language.code)
+          isDefaultLanguageCode(language.code, config.defaultLanguage)
         );
 
         if (primaryLanguageIndex >= 0) {
@@ -391,13 +395,14 @@ async function runImportCommand(
     );
   } catch (err) {
     if (err instanceof AuthenticationError) {
-      const message =
-        'Fastlate: falha de autenticação — verifique o token salvo com o comando "Fastlate: Configurar token".';
+      const message = t('error.auth');
       log.error(message);
       preview.showError(message);
       await vscode.window.showErrorMessage(message);
     } else {
-      const message = `Fastlate: erro inesperado durante a importação — ${err instanceof Error ? err.message : String(err)}`;
+      const message = t('error.unexpectedImport', {
+        message: err instanceof Error ? err.message : String(err),
+      });
       log.error(message);
       preview.showError(message);
       await vscode.window.showErrorMessage(message);

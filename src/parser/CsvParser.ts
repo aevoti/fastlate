@@ -20,7 +20,7 @@ export interface ParserLogger {
  *   Without key column:
  *     Row 1 (index 0): language names  → LanguageHeader.name  (columns A+)
  *     Row 2 (index 1): language codes  → LanguageHeader.code  (columns A+)
- *     Row 3+ (index 2+): terms         → values (columns A+), key = pt/pt_BR value
+ *     Row 3+ (index 2+): terms         → values (columns A+), key = default language value
  */
 export class CsvParser {
   /**
@@ -34,6 +34,7 @@ export class CsvParser {
   parseFile(
     filePath: string,
     logger?: ParserLogger,
+    defaultLanguage?: string,
   ): Result<ParseResult, ParseError> {
     // -----------------------------------------------------------------------
     // 1. Read the file
@@ -116,7 +117,16 @@ export class CsvParser {
     }
 
     const languageHeader = languageHeaders[0];
-    const primaryLanguageIndex = this._findPrimaryLanguageIndex(languageHeaders);
+    const primaryLanguageIndex = this._findPrimaryLanguageIndex(languageHeaders, defaultLanguage);
+    if (primaryLanguageIndex < 0) {
+      return {
+        ok: false,
+        error: {
+          kind: 'missing_default_language_column',
+          languageCode: defaultLanguage ?? '',
+        },
+      };
+    }
 
     // -----------------------------------------------------------------------
     // 6. Process data rows (row 3+, index 2+) into Terms (Req 3.1, 3.3, 3.4)
@@ -173,13 +183,24 @@ export class CsvParser {
     return /^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})?$/i.test(value.trim());
   }
 
-  private _findPrimaryLanguageIndex(languageHeaders: LanguageHeader[]): number {
-    const primaryIndex = languageHeaders.findIndex((language) => {
-      const normalized = language.code.trim().toLowerCase().replace('-', '_');
-      return normalized === 'pt' || normalized === 'pt_br';
-    });
+  private _findPrimaryLanguageIndex(
+    languageHeaders: LanguageHeader[],
+    defaultLanguage?: string,
+  ): number {
+    if (!defaultLanguage) {
+      const portugueseIndex = languageHeaders.findIndex((language) => {
+        const normalized = language.code.trim().toLowerCase().replace('-', '_');
+        return normalized === 'pt' || normalized === 'pt_br';
+      });
 
-    return primaryIndex >= 0 ? primaryIndex : 0;
+      return portugueseIndex >= 0 ? portugueseIndex : 0;
+    }
+
+    const normalizedDefaultLanguage = defaultLanguage.trim().toLowerCase().replace('-', '_');
+    return languageHeaders.findIndex(
+      (language) =>
+        language.code.trim().toLowerCase().replace('-', '_') === normalizedDefaultLanguage,
+    );
   }
 
   private _expandCommaSeparatedLanguageNames(

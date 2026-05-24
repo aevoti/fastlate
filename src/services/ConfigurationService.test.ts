@@ -14,6 +14,7 @@ describe('ConfigurationService', () => {
     authToken: 'my-secret-token',
     project: 'my-project',
     component: 'my-component',
+    defaultLanguage: 'pt_BR',
   };
 
   beforeEach(() => {
@@ -61,6 +62,34 @@ describe('ConfigurationService', () => {
         authToken: 'my-secret-token',
         project: 'my-project',
         component: 'my-component',
+        defaultLanguage: 'pt_BR',
+      });
+    }
+  });
+
+  it('reads settings from full fastlate.* keys when scoped values are empty', () => {
+    const scopedGet = jest.fn((key: string) => (key === 'serverUrl' ? '' : undefined));
+    const rootValues: Record<string, string> = {
+      'fastlate.serverUrl': 'https://weblate.example.com',
+      'fastlate.project': 'my-project',
+      'fastlate.component': 'my-component',
+      'fastlate.defaultLanguage': 'pt_BR',
+    };
+    const rootGet = jest.fn((key: string) => rootValues[key]);
+    (workspace.getConfiguration as jest.Mock).mockImplementation((section?: string) =>
+      section === 'fastlate' ? { get: scopedGet } : { get: rootGet },
+    );
+
+    const result = service.readConfiguration('my-secret-token');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual({
+        serverUrl: 'https://weblate.example.com',
+        authToken: 'my-secret-token',
+        project: 'my-project',
+        component: 'my-component',
+        defaultLanguage: 'pt_BR',
       });
     }
   });
@@ -77,7 +106,7 @@ describe('ConfigurationService', () => {
   // Requirement 1.2 — missing fields
   // -------------------------------------------------------------------------
 
-  const requiredFields = ['serverUrl', 'authToken', 'project', 'component'] as const;
+  const requiredFields = ['serverUrl', 'authToken', 'project', 'component', 'defaultLanguage'] as const;
 
   describe.each(requiredFields)('missing field: %s', (field) => {
     it(`returns ok:false with missing_field error when "${field}" is absent`, () => {

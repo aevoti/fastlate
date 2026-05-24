@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ConfigurationService } from '../services/ConfigurationService';
 import { TokenStorageService } from '../services/TokenStorageService';
+import { currentHtmlLang, t } from '../i18n';
 
 type SidebarMessage = {
   command?: string;
@@ -12,7 +13,12 @@ type ConfigurationStatus = {
   authToken: boolean;
   project: boolean;
   component: boolean;
+  defaultLanguage: boolean;
 };
+
+function isPresent(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
 
 /**
  * Sidebar webview that makes Fastlate discoverable from the VSCode Activity Bar.
@@ -76,13 +82,19 @@ export class FastlateSidebarProvider implements vscode.WebviewViewProvider {
         authToken: true,
         project: true,
         component: true,
+        defaultLanguage: true,
       };
     }
 
-    const config = vscode.workspace.getConfiguration('fastlate');
+    const scopedConfig = vscode.workspace.getConfiguration('fastlate');
+    const rootConfig = vscode.workspace.getConfiguration();
     const hasValue = (field: string): boolean => {
-      const value = config.get<string>(field);
-      return typeof value === 'string' && value.trim().length > 0;
+      const scopedValue = scopedConfig.get<string>(field);
+      if (isPresent(scopedValue)) {
+        return true;
+      }
+
+      return isPresent(rootConfig.get<string>(`fastlate.${field}`));
     };
 
     return {
@@ -91,6 +103,7 @@ export class FastlateSidebarProvider implements vscode.WebviewViewProvider {
       authToken: tokenConfigured,
       project: hasValue('project'),
       component: hasValue('component'),
+      defaultLanguage: hasValue('defaultLanguage'),
     };
   }
 
@@ -99,7 +112,7 @@ export class FastlateSidebarProvider implements vscode.WebviewViewProvider {
     const nonce = this.createNonce();
 
     return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="${currentHtmlLang()}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -213,22 +226,23 @@ export class FastlateSidebarProvider implements vscode.WebviewViewProvider {
 <body>
   <h1>Fastlate</h1>
   <section class="status" aria-label="Estado da configuração">
-    <strong>${status.ready ? 'Configuração pronta' : 'Configuração incompleta'}</strong>
-    <p class="muted">${status.ready ? 'Pronto para importar traduções.' : 'Preencha os campos obrigatórios para importar.'}</p>
+    <strong>${status.ready ? t('sidebar.readyTitle') : t('sidebar.incompleteTitle')}</strong>
+    <p class="muted">${status.ready ? t('sidebar.readyDescription') : t('sidebar.incompleteDescription')}</p>
   </section>
 
   <div class="fields">
-    ${this.renderField('Servidor', status.serverUrl)}
-    ${this.renderField('Token seguro', status.authToken)}
-    ${this.renderField('Projeto', status.project)}
-    ${this.renderField('Componente', status.component)}
+    ${this.renderField(t('sidebar.server'), status.serverUrl)}
+    ${this.renderField(t('sidebar.secureToken'), status.authToken)}
+    ${this.renderField(t('sidebar.project'), status.project)}
+    ${this.renderField(t('sidebar.component'), status.component)}
+    ${this.renderField(t('sidebar.defaultLanguage'), status.defaultLanguage)}
   </div>
 
   <div class="actions">
-    <button id="btn-import">Importar CSV</button>
-    <button id="btn-token">Configurar token</button>
-    <button id="btn-remove-token">Remover token</button>
-    <button id="btn-settings">Abrir configurações</button>
+    <button id="btn-import">${t('sidebar.importCsv')}</button>
+    <button id="btn-token">${t('sidebar.configureToken')}</button>
+    <button id="btn-remove-token">${t('sidebar.removeToken')}</button>
+    <button id="btn-settings">${t('sidebar.openSettings')}</button>
   </div>
 
   <script nonce="${nonce}">
@@ -253,7 +267,7 @@ export class FastlateSidebarProvider implements vscode.WebviewViewProvider {
   private renderField(label: string, configured: boolean): string {
     return `<div class="field">
       <span>${label}</span>
-      <span class="badge ${configured ? 'ok' : 'missing'}">${configured ? 'OK' : 'Ausente'}</span>
+      <span class="badge ${configured ? 'ok' : 'missing'}">${configured ? t('sidebar.ok') : t('sidebar.missing')}</span>
     </div>`;
   }
 

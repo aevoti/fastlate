@@ -35,6 +35,7 @@ const configArb: fc.Arbitrary<WeblateConfiguration> = fc.record({
   authToken: nonBlankTextArb,
   project: slugArb,
   component: slugArb,
+  defaultLanguage: fc.constant('pt_BR'),
 });
 
 const termArb: fc.Arbitrary<Term> = fc.record({

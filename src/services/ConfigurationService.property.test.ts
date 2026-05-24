@@ -56,8 +56,8 @@ const validUrl: fc.Arbitrary<string> = fc.oneof(
   fc.constant('https://translate.mycompany.org/weblate'),
 );
 
-/** The five configuration field names in order. */
-const CONFIG_FIELDS = ['serverUrl', 'authToken', 'project', 'component'] as const;
+/** The configuration field names in order. */
+const CONFIG_FIELDS = ['serverUrl', 'authToken', 'project', 'component', 'defaultLanguage'] as const;
 type ConfigField = (typeof CONFIG_FIELDS)[number];
 
 /**
@@ -106,6 +106,7 @@ describe('ConfigurationService — Property 4: rejeita entradas inválidas', () 
             authToken: 'token-abc',
             project: 'my-project',
             component: 'my-component',
+            defaultLanguage: 'pt_BR',
           };
 
           // Replace the other fields with generated values (keep serverUrl valid)
@@ -146,6 +147,7 @@ describe('ConfigurationService — Property 4: rejeita entradas inválidas', () 
             authToken: 'token-abc',
             project: 'my-project',
             component: 'my-component',
+            defaultLanguage: 'pt_BR',
           };
 
           values[blankField] = blank;
@@ -171,12 +173,14 @@ describe('ConfigurationService — Property 4: rejeita entradas inválidas', () 
         nonBlankString,
         nonBlankString,
         nonBlankString,
-        (badUrl, authToken, project, component) => {
+        nonBlankString,
+        (badUrl, authToken, project, component, defaultLanguage) => {
           const values: Record<ConfigField, string | undefined> = {
             serverUrl: badUrl,
             authToken,
             project,
             component,
+            defaultLanguage,
           };
 
           mockGet.mockImplementation((key: string) => values[key as ConfigField]);
@@ -205,6 +209,7 @@ describe('ConfigurationService — Property 4: rejeita entradas inválidas', () 
             authToken: blank2,
             project: 'my-project',
             component: 'my-component',
+            defaultLanguage: 'pt_BR',
           };
 
           mockGet.mockImplementation((key: string) => values[key as ConfigField]);
@@ -228,12 +233,14 @@ describe('ConfigurationService — Property 4: rejeita entradas inválidas', () 
         nonBlankString,
         nonBlankString,
         nonBlankString,
-        (serverUrl, authToken, project, component) => {
+        nonBlankString,
+        (serverUrl, authToken, project, component, defaultLanguage) => {
           const values: Record<ConfigField, string | undefined> = {
             serverUrl,
             authToken,
             project,
             component,
+            defaultLanguage,
           };
 
           mockGet.mockImplementation((key: string) => values[key as ConfigField]);

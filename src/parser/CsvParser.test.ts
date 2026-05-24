@@ -437,6 +437,24 @@ describe('CsvParser', () => {
       ]);
     });
 
+    it('returns missing_default_language_column when configured default language is absent', () => {
+      const csv = buildCsv([
+        ['label', 'English', 'EspaÃ±ol'],
+        ['code', 'en', 'es'],
+        ['button.save', 'Save', 'Guardar'],
+      ]);
+      mockReadFileSync.mockReturnValue(csv);
+
+      const result = parser.parseFile('/fake/file.csv', undefined, 'pt_BR');
+
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error).toEqual({
+        kind: 'missing_default_language_column',
+        languageCode: 'pt_BR',
+      });
+    });
+
     it('splits comma-separated language names when semicolon rows provide more language codes', () => {
       const csv = [
         'Português; Inglês, Espanhol, Frances',

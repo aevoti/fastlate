@@ -10,6 +10,10 @@ const workspace = {
   onDidChangeConfiguration: jest.fn(),
 };
 
+const env = {
+  language: 'pt-br',
+};
+
 const window = {
   createOutputChannel: jest.fn().mockReturnValue({
     appendLine: jest.fn(),
@@ -80,4 +84,5 @@ export {
   CancellationTokenSource,
   EventEmitter,
   createSecretStorage,
+  env,
 };

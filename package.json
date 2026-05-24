@@ -2,7 +2,7 @@
   "name": "fastlate",
   "version": "0.0.1",
   "private": true,
-  "description": "VSCode extension for importing translations from Weblate",
+  "description": "%extension.description%",
   "displayName": "Fastlate",
   "publisher": "aevo",
   "license": "MIT",
@@ -26,32 +26,37 @@
         "fastlate.serverUrl": {
           "type": "string",
           "default": "",
-          "description": "URL base do servidor Weblate (ex.: https://weblate.example.com)"
+          "description": "%configuration.serverUrl.description%"
         },
         "fastlate.project": {
           "type": "string",
           "default": "",
-          "description": "Slug do projeto Weblate"
+          "description": "%configuration.project.description%"
         },
         "fastlate.component": {
           "type": "string",
           "default": "",
-          "description": "Slug do componente Weblate"
+          "description": "%configuration.component.description%"
+        },
+        "fastlate.defaultLanguage": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.defaultLanguage.description%"
         }
       }
     },
     "commands": [
       {
         "command": "fastlate.importTranslations",
-        "title": "Fastlate: Importar Traduções"
+        "title": "%command.importTranslations.title%"
       },
       {
         "command": "fastlate.configureToken",
-        "title": "Fastlate: Configurar token"
+        "title": "%command.configureToken.title%"
       },
       {
         "command": "fastlate.removeToken",
-        "title": "Fastlate: Remover token"
+        "title": "%command.removeToken.title%"
       }
     ],
     "viewsContainers": {
@@ -67,7 +72,7 @@
       "fastlate": [
         {
           "id": "fastlate.sidebar",
-          "name": "Importar Traduções",
+          "name": "%view.sidebar.name%",
           "type": "webview"
         }
       ]

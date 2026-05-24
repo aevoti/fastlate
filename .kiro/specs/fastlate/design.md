@@ -7,7 +7,7 @@ A extensão **Fastlate** é uma extensão VSCode que automatiza a importação d
 O fluxo principal é:
 
 1. Usuário aciona o comando `fastlate.importTranslations` pela Command Palette ou pela visualização lateral Fastlate
-2. Extensão valida as configurações de conexão
+2. Extensão valida as configurações de conexão e o idioma padrão
 3. Usuário seleciona um arquivo CSV
 4. Parser lê e valida o arquivo, extraindo o Language_Header e os Terms
 5. Preview_Panel exibe os dados para confirmação
@@ -68,6 +68,7 @@ interface WeblateConfiguration {
   authToken: string;       // VSCode SecretStorage: fastlate.authToken
   project: string;         // fastlate.project
   component: string;       // fastlate.component
+  defaultLanguage: string;  // fastlate.defaultLanguage
 }
 
 interface ConfigurationService {
@@ -80,10 +81,10 @@ type ConfigurationError =
 ```
 
 Regras de validação:
-- `serverUrl`, `project`, `component` e o token seguro são obrigatórios e não podem ser apenas espaços em branco
+- `serverUrl`, `project`, `component`, `defaultLanguage` e o token seguro são obrigatórios e não podem ser apenas espaços em branco
 - `serverUrl` deve começar com `http://` ou `https://` e ter host não vazio
 - `authToken` é salvo no `SecretStorage` do VSCode por comandos dedicados (`fastlate.configureToken` e `fastlate.removeToken`)
-- O idioma alvo não é configurado em `settings.json`; ele é lido da linha 2 da planilha (`Language_Header.code`) e usado nos endpoints do Weblate
+- `defaultLanguage` é obrigatório, deve existir como coluna no CSV, serve como idioma fonte das chaves e define o único código de idioma usado para criação via `POST`
 
 ### CsvParser
 
@@ -95,14 +96,21 @@ interface LanguageHeader {
   code: string;   // linha 2: ex. "pt"
 }
 
+interface TermValue {
+  language: LanguageHeader;
+  value: string;
+}
+
 interface Term {
   key: string;
   value: string;
+  values?: TermValue[];
   sourceRow: number;  // número da linha original (para logs)
 }
 
 interface ParseResult {
   languageHeader: LanguageHeader;
+  languageHeaders: LanguageHeader[];
   terms: Term[];
 }
 
@@ -113,6 +121,7 @@ interface CsvParser {
 type ParseError =
   | { kind: 'file_read_error'; message: string }
   | { kind: 'missing_language_header' }
+  | { kind: 'missing_default_language_column'; languageCode: string }
   | { kind: 'empty_spreadsheet' }
   | { kind: 'insufficient_columns' };
 ```
@@ -121,9 +130,12 @@ Comportamento:
 - Usa `papaparse` com `dynamicTyping: false` para preservar valores exatos das células como strings
 - Detecta automaticamente o delimitador (vírgula ou ponto-e-vírgula) via `delimiter: ''` (auto-detect do papaparse)
 - Decodifica UTF-8 com BOM removendo o BOM (`\uFEFF`) antes do parsing
-- Linha 1 = nome do idioma, linha 2 = código do idioma, linhas 3+ = dados
-- Linhas com chave ou valor vazio são ignoradas com aviso no OutputChannel incluindo o número da linha
-- Requer pelo menos 2 colunas
+- Linha 1 = nomes dos idiomas, linha 2 = códigos dos idiomas, linhas 3+ = dados
+- CSVs com coluna dedicada usam a coluna A como chave e as colunas B+ como idiomas
+- CSVs sem coluna dedicada usam as colunas A+ como idiomas; nesses casos, `fastlate.defaultLanguage` define qual coluna fornece a chave de cada linha
+- Todo CSV deve conter uma coluna cujo código de idioma seja igual a `fastlate.defaultLanguage`; caso contrário, o parser retorna erro antes de qualquer chamada ao Weblate
+- Linhas com chave vazia ou todos os valores de idioma vazios são ignoradas com aviso no OutputChannel incluindo o número da linha
+- Requer pelo menos uma coluna de idioma válida
 
 ### PreviewPanel
 
@@ -132,6 +144,7 @@ Implementado como `vscode.WebviewPanel`. Exibe os dados lidos antes da importaç
 ```typescript
 interface PreviewPanelOptions {
   languageHeader: LanguageHeader;
+  languageHeaders: LanguageHeader[];
   terms: Term[];
 }
 
@@ -144,9 +157,9 @@ interface PreviewPanel {
 ```
 
 O painel exibe:
-- Nome e código do idioma
+- Idiomas declarados na planilha
 - Total de terms lidos
-- Tabela com colunas "Chave" e "Valor" (somente leitura)
+- Tabela com coluna "Chave" e uma coluna de valor para cada idioma declarado (somente leitura)
 - Botões "Importar" e "Cancelar"
 
 Comunicação via `webview.postMessage` / `webview.onDidReceiveMessage`. O painel é somente leitura — nenhum campo é editável. Ao clicar em "Importar", o painel resolve a ação de importação, altera o botão para "Importando...", exibe o status "Importando termos...", desabilita as ações de envio/cancelamento e permanece aberto para conferência. A extensão re-renderiza o HTML do painel para refletir os estados de importação, conclusão e erro; quando o job termina, a view troca o estado visual para concluído ou erro e reabilita o botão "Fechar".
@@ -163,7 +176,7 @@ interface FastlateSidebarProvider extends vscode.WebviewViewProvider {
 ```
 
 A view exibe:
-- Estado de `serverUrl`, token seguro, `project` e `component`
+- Estado de `serverUrl`, token seguro, `project`, `component` e `defaultLanguage`
 - Status geral pronto/incompleto
 - Botão "Importar CSV" que executa `fastlate.importTranslations`
 - Botão para abrir as configurações Fastlate (`fastlate`)
@@ -255,13 +268,15 @@ interface ImportJob {
 ```
 
 Fluxo por Term:
-1. `POST /api/translations/{project}/{component}/{language}/units/` usando `Language_Header.code` como `{language}` → obtém `unitId`
+1. `POST /api/translations/{project}/{component}/{language}/units/` usando `config.defaultLanguage` como `{language}`; nenhum outro idioma realiza criação via `POST`
 2. Se HTTP 201 → marca como "criado", prossegue para edição com o `unitId` retornado
 3. Se HTTP 400 com chave duplicada → marca como "já existente", busca `unitId` via `GET /units/?q={key}`, prossegue para edição
 4. Se HTTP 401/403 → interrompe o job imediatamente
 5. Se outro erro → registra, contabiliza como erro, prossegue para o próximo Term
 6. `PATCH /api/units/{unitId}/` com o valor de tradução
 7. Atualiza progresso após conclusão de criação + edição
+
+Se a planilha não contiver uma coluna cujo `Language_Header.code` corresponda a `config.defaultLanguage`, a extensão exibe "Coluna com idioma padrão não encontrada" e interrompe o fluxo antes do `ImportJob`.
 
 ### OutputChannel
 
@@ -298,6 +313,10 @@ interface FastlateLogger {
         "fastlate.component": {
           "type": "string",
           "description": "Slug do componente Weblate"
+        },
+        "fastlate.defaultLanguage": {
+          "type": "string",
+          "description": "Código obrigatório do idioma padrão. O CSV deve conter esta coluna; ela serve como idioma fonte das chaves e é a única que cria chaves via POST (ex.: pt_BR)"
         }
       }
     },
@@ -340,11 +359,13 @@ interface FastlateLogger {
 ### Estrutura do Arquivo CSV
 
 ```
-Português          ← linha 1: nome do idioma (Language_Header.name)
-pt                 ← linha 2: código do idioma (Language_Header.code)
-button.save,Salvar ← linha 3+: chave,valor (Terms)
-button.cancel,Cancelar
+Português;Inglês;Espanhol
+pt_BR;en;es
+Salvar;Save;Guardar
+Cancelar;Cancel;Cancelar
 ```
+
+Com `fastlate.defaultLanguage = "pt_BR"`, as chaves são `Salvar` e `Cancelar`. Em CSVs com coluna dedicada, a coluna A continua sendo a chave, mas o CSV ainda deve conter a coluna `pt_BR`, pois ela é o idioma fonte usado no `POST` de criação.
 
 ### Term Status (Term_Status)
 
@@ -358,7 +379,7 @@ button.cancel,Cancelar
 
 | Operação | Método | Endpoint |
 |----------|--------|----------|
-| Criar termo | POST | `/api/translations/{project}/{component}/{language}/units/`, com `{language}` vindo de `Language_Header.code` |
+| Criar termo | POST | `/api/translations/{project}/{component}/{language}/units/`, com `{language}` vindo de `fastlate.defaultLanguage` |
 | Buscar termo existente | GET | `/api/translations/{project}/{component}/{language}/units/?q={key}`, com `{language}` vindo de `Language_Header.code` |
 | Editar termo | PATCH | `/api/units/{id}/` |
 
@@ -436,7 +457,7 @@ Cada propriedade do design é implementada como um único teste PBT com mínimo 
 | P2: Round-trip CSV | Listas de Terms com chaves/valores arbitrários | `parse(serialize(terms))` ≡ `terms` |
 | P3: Rejeição de linhas inválidas | CSVs com mix de linhas válidas e inválidas | `result.terms.length === countValidRows(csv)` |
 | P4: Invariância de delimitador | Listas de Terms sem vírgulas/ponto-e-vírgulas nas células | `parse(serializeComma(t))` ≡ `parse(serializeSemicolon(t))` |
-| P5: Validação de configuração | Configurações com campos ausentes/brancos/URLs inválidas | `validate(config).isError === true` |
+| P5: Validação de configuração | Configurações com campos ausentes/brancos/URLs inválidas, incluindo `defaultLanguage` ausente ou branco | `validate(config).isError === true` |
 
 ### Testes de Integração
 
@@ -474,7 +495,7 @@ Cada propriedade do design é implementada como um único teste PBT com mínimo 
 
 ### Property 4: Validação de configuração rejeita entradas inválidas
 
-*Para qualquer* conjunto de configurações onde pelo menos um campo obrigatório está ausente, é composto apenas de espaços em branco, ou onde a URL não começa com `http://` ou `https://`, a função de validação deve retornar um erro descritivo e nunca retornar sucesso.
+*Para qualquer* conjunto de configurações onde pelo menos um campo obrigatório está ausente, é composto apenas de espaços em branco, ou onde a URL não começa com `http://` ou `https://`, a função de validação deve retornar um erro descritivo e nunca retornar sucesso. Isso inclui `fastlate.defaultLanguage`.
 
 **Validates: Requirements 1.2, 1.3, 1.4**
 
@@ -504,6 +525,6 @@ Cada propriedade do design é implementada como um único teste PBT com mínimo 
 
 ### Property 9: Preview renderiza todos os dados lidos
 
-*Para qualquer* resultado de parsing com N Terms, o HTML gerado pelo Preview_Panel deve conter o nome do idioma, o código do idioma, o total N, e as chaves e valores de todos os N Terms.
+*Para qualquer* resultado de parsing com N Terms e M idiomas, o HTML gerado pelo Preview_Panel deve conter os nomes e códigos dos idiomas, o total N, e as chaves e valores de todos os N Terms.
 
 **Validates: Requirements 9.1, 9.2, 9.3**

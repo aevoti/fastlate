@@ -39,6 +39,7 @@ describe('FastlateSidebarProvider', () => {
       authToken: 'super-secret-token',
       project: 'project-slug',
       component: 'component-slug',
+      defaultLanguage: 'pt_BR',
     });
 
     const html = await buildSidebarHtml(true);
@@ -48,6 +49,7 @@ describe('FastlateSidebarProvider', () => {
     expect(html).toContain('Configurar token');
     expect(html).toContain('Remover token');
     expect(html).toContain('Abrir configurações');
+    expect(html).toContain('Idioma padrão');
     expect(html).not.toContain('super-secret-token');
   });
 
@@ -57,6 +59,7 @@ describe('FastlateSidebarProvider', () => {
       authToken: '',
       project: '',
       component: 'component-slug',
+      defaultLanguage: '',
     });
 
     const html = await buildSidebarHtml(false);
@@ -64,6 +67,7 @@ describe('FastlateSidebarProvider', () => {
     expect(html).toContain('Configuração incompleta');
     expect(html).toContain('<span>Token seguro</span>');
     expect(html).toContain('<span>Projeto</span>');
+    expect(html).toContain('<span>Idioma padrão</span>');
     expect(html).toContain('Ausente');
   });
 });

@@ -19,16 +19,16 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
     - _Requirements: 1.1, 2.2, 4.1, 5.1, 6.3_
 
   - [x] 1.3 Registrar contribuições da extensão no `package.json`
-    - Adicionar `contributes.configuration` com as propriedades não sensíveis (`serverUrl`, `project`, `component`); o idioma alvo vem do CSV (`Language_Header.code`)
+    - Adicionar `contributes.configuration` com as propriedades não sensíveis (`serverUrl`, `project`, `component`, `defaultLanguage`)
     - Adicionar `contributes.commands` com os comandos `fastlate.importTranslations`, `fastlate.configureToken` e `fastlate.removeToken`
     - _Requirements: 1.1, 1.5_
 
 - [x] 2. Implementar ConfigurationService
   - [x] 2.1 Implementar `ConfigurationService` com leitura e validação
     - Criar `src/services/ConfigurationService.ts`
-    - Ler `serverUrl`, `project` e `component` de `vscode.workspace.getConfiguration('fastlate')`
+    - Ler `serverUrl`, `project`, `component` e `defaultLanguage` de `vscode.workspace.getConfiguration('fastlate')`
     - Ler o token via `vscode.ExtensionContext.secrets`
-    - Validar presença e não-brancura de todos os campos e do token; retornar `{ kind: 'missing_field', field }` para campos ausentes/brancos
+    - Validar presença e não-brancura de todos os campos, incluindo `defaultLanguage`, e do token; retornar `{ kind: 'missing_field', field }` para campos ausentes/brancos; `defaultLanguage` é obrigatório porque é o único idioma que cria chaves via `POST`
     - Validar que `serverUrl` começa com `http://` ou `https://` e tem host não vazio; retornar `{ kind: 'invalid_url', value }` para URL inválida
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
@@ -53,7 +53,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
     - Extrair `LanguageHeader` das linhas 1 e 2; retornar `{ kind: 'missing_language_header' }` se vazias
     - Retornar `{ kind: 'insufficient_columns' }` se menos de 2 colunas
     - Retornar `{ kind: 'empty_spreadsheet' }` se nenhum term após linha 2
-    - Processar linhas 3+ como `Term[]`, ignorando linhas com chave ou valor vazio (com aviso no logger)
+    - Processar linhas 3+ como `Term[]`, exigindo uma coluna cujo código corresponda a `defaultLanguage`; usar coluna dedicada de chave quando existir ou a coluna de `defaultLanguage` como chave quando não existir; ignorar linhas com chave vazia ou todos os valores de idioma vazios (com aviso no logger)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.9, 3.1, 3.2, 3.3, 3.4, 8.1, 8.2, 8.3_
 
   - [x]* 3.2 Escrever testes unitários para `CsvParser`
@@ -62,7 +62,9 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
     - Testar arquivo com Language_Header ausente (linha 1 ou 2 vazia)
     - Testar planilha sem terms (apenas Language_Header)
     - Testar planilha com menos de 2 colunas
-    - Testar linhas com chave vazia e com valor vazio (devem ser ignoradas)
+    - Testar linhas com chave vazia e com todos os valores de idioma vazios (devem ser ignoradas)
+    - Testar CSV sem coluna dedicada onde a chave vem da coluna configurada em `defaultLanguage`
+    - Testar erro quando o CSV não contém a coluna configurada em `defaultLanguage`
     - Testar arquivo corrompido/inacessível
     - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.9, 3.2, 3.3, 3.4, 8.3_
 
@@ -80,7 +82,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
 
   - [x]* 3.5 Escrever property test de filtragem de linhas inválidas (Property 3)
     - **Property 3: Filtragem de linhas inválidas**
-    - Gerar CSVs com mix de linhas válidas e inválidas (chave vazia, valor vazio, ambos)
+    - Gerar CSVs com mix de linhas válidas e inválidas (chave vazia, todos os valores vazios, ambos)
     - Verificar que `result.terms.length === countValidRows(csv)`
     - **Validates: Requirements 3.3, 3.4, 2.7**
 
@@ -153,7 +155,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
   - [x] 8.2 Implementar `ImportJob`
     - Criar `src/job/ImportJob.ts`
     - Implementar `run(options)` que processa cada Term sequencialmente:
-      1. POST para criar term → obtém `unitId`
+      1. POST para criar term no idioma `defaultLanguage`, quando a coluna desse idioma existir → obtém `unitId`
       2. Se HTTP 201 → marca `created`, usa `unitId` retornado
       3. Se HTTP 400 duplicado → marca `only_edited`, busca `unitId` via `findTermId()`
       4. Se HTTP 401/403 → interrompe o job imediatamente
@@ -219,7 +221,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
 
   - [x] 11.2 Implementar `FastlateSidebarProvider`
     - Criar `src/ui/FastlateSidebarProvider.ts`
-    - Exibir resumo de configuração sem revelar o token
+    - Exibir resumo de configuração sem revelar o token, incluindo o estado de `defaultLanguage`
     - Adicionar ação para executar `fastlate.importTranslations`
     - Atualizar o HTML quando configurações `fastlate.*` mudarem
     - _Requirements: 10.3, 10.4, 10.5_

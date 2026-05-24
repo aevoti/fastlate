@@ -25,6 +25,8 @@ export interface WeblateConfiguration {
   project: string;
   /** Weblate component slug. */
   component: string;
+  /** Default language code used as source key column when no dedicated key column exists. */
+  defaultLanguage: string;
 }
 
 /** Errors that can occur while reading or validating the configuration. */
@@ -80,6 +82,7 @@ export interface ParseResult {
 /** Errors that can occur while parsing a spreadsheet file. */
 export type ParseError =
   | { kind: 'missing_language_header' }
+  | { kind: 'missing_default_language_column'; languageCode: string }
   | { kind: 'insufficient_columns' }
   | { kind: 'empty_spreadsheet' }
   | { kind: 'file_error'; message: string };
