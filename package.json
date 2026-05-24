@@ -1,0 +1,104 @@
+{
+  "name": "fastlate",
+  "version": "0.0.1",
+  "private": true,
+  "description": "VSCode extension for importing translations from Weblate",
+  "displayName": "Fastlate",
+  "publisher": "aevo",
+  "license": "MIT",
+  "main": "./out/extension.js",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:fastlate.importTranslations",
+    "onCommand:fastlate.configureToken",
+    "onCommand:fastlate.removeToken",
+    "onView:fastlate.sidebar"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Fastlate",
+      "properties": {
+        "fastlate.serverUrl": {
+          "type": "string",
+          "default": "",
+          "description": "URL base do servidor Weblate (ex.: https://weblate.example.com)"
+        },
+        "fastlate.project": {
+          "type": "string",
+          "default": "",
+          "description": "Slug do projeto Weblate"
+        },
+        "fastlate.component": {
+          "type": "string",
+          "default": "",
+          "description": "Slug do componente Weblate"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "fastlate.importTranslations",
+        "title": "Fastlate: Importar Traduções"
+      },
+      {
+        "command": "fastlate.configureToken",
+        "title": "Fastlate: Configurar token"
+      },
+      {
+        "command": "fastlate.removeToken",
+        "title": "Fastlate: Remover token"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fastlate",
+          "title": "Fastlate",
+          "icon": "resources/fastlate.svg"
+        }
+      ]
+    },
+    "views": {
+      "fastlate": [
+        {
+          "id": "fastlate.sidebar",
+          "name": "Importar Traduções",
+          "type": "webview"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "node-fetch": "3.3.2",
+    "papaparse": "5.4.1"
+  },
+  "devDependencies": {
+    "@types/jest": "29.5.12",
+    "@types/node": "20.11.5",
+    "@types/papaparse": "5.3.14",
+    "@types/vscode": "^1.120.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^8.57.1",
+    "fast-check": "^4.8.0",
+    "jest": "29.7.0",
+    "ts-jest": "29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "5.3.3"
+  }
+}
