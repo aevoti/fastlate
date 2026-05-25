@@ -55,7 +55,7 @@ export class FastlateSidebarProvider implements vscode.WebviewViewProvider {
     }
 
     if (message.command === 'settings') {
-      await vscode.commands.executeCommand('workbench.action.openSettings', 'fastlate');
+      await vscode.commands.executeCommand('workbench.action.openSettings');
       return;
     }
 

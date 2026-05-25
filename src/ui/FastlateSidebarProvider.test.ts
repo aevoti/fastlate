@@ -6,8 +6,16 @@ type SidebarHtmlBuilder = {
   buildHtml(): Promise<string>;
 };
 
+type SidebarMessageHandler = {
+  handleMessage(message: { command: string }): Promise<void>;
+};
+
 const mockWorkspace = vscode.workspace as unknown as {
   getConfiguration: jest.Mock;
+};
+
+const mockCommands = vscode.commands as unknown as {
+  executeCommand: jest.Mock;
 };
 
 function configure(values: Record<string, string>): void {
@@ -69,5 +77,14 @@ describe('FastlateSidebarProvider', () => {
     expect(html).toContain('<span>Projeto</span>');
     expect(html).toContain('<span>Idioma padrão</span>');
     expect(html).toContain('Ausente');
+  });
+
+  it('opens the general settings view without a search query for fork compatibility', async () => {
+    const provider = new FastlateSidebarProvider(createTokenStorage(true));
+    const handleMessage = (provider as unknown as SidebarMessageHandler).handleMessage.bind(provider);
+
+    await handleMessage({ command: 'settings' });
+
+    expect(mockCommands.executeCommand).toHaveBeenCalledWith('workbench.action.openSettings');
   });
 });
