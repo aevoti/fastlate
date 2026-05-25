@@ -140,6 +140,28 @@ describe('WeblateHttpClient', () => {
   });
 
   describe('findTermId', () => {
+    it('uses Weblate exact key search syntax in the q query parameter', async () => {
+      mockFetch.mockResolvedValue(response(200, { results: [] }));
+
+      await client.findTermId('button.save');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://weblate.example.com/api/translations/project-slug/component-slug/pt/units/?q=key%3A%3D%22button.save%22',
+        expect.objectContaining({ method: 'GET' }),
+      );
+    });
+
+    it('escapes quotes in exact key search queries', async () => {
+      mockFetch.mockResolvedValue(response(200, { results: [] }));
+
+      await client.findTermId('button."save"');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://weblate.example.com/api/translations/project-slug/component-slug/pt/units/?q=key%3A%3D%22button.%5C%22save%5C%22%22',
+        expect.objectContaining({ method: 'GET' }),
+      );
+    });
+
     it('returns the id for an exact key match in search results', async () => {
       mockFetch.mockResolvedValue(response(200, {
         results: [

@@ -133,6 +133,11 @@ function exactResultId(value: unknown, expectedKey: string): number | null {
   return exactResult === undefined ? null : numericId(exactResult);
 }
 
+function exactKeySearchQuery(key: string): string {
+  const escapedKey = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `key:="${escapedKey}"`;
+}
+
 /**
  * Executes an HTTP request with retry logic.
  *
@@ -293,7 +298,7 @@ export class WeblateHttpClient {
    * @returns    The unit ID of the exact matching result, or `null` if not found.
    */
   async findTermId(key: string): Promise<number | null> {
-    const url = `${this.translationsBaseUrl}?q=${encodeURIComponent(key)}`;
+    const url = `${this.translationsBaseUrl}?q=${encodeURIComponent(exactKeySearchQuery(key))}`;
     const headers: Record<string, string> = {
       Authorization: this.authHeader,
     };

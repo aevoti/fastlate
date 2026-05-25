@@ -114,7 +114,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
   - [x] 6.1 Implementar `WeblateHttpClient` com lógica de retry
     - Criar `src/http/WeblateHttpClient.ts`
     - Implementar `createTerm()`: POST para `/api/translations/{project}/{component}/{language}/units/` com `Authorization: Token {token}`; retornar `{ kind: 'created', unitId }` para HTTP 201, `{ kind: 'already_exists', message? }` para HTTP 400 com chave duplicada (incluindo qualquer mensagem do corpo que contenha `"already exist"`), `{ kind: 'auth_error' }` para 401/403, `{ kind: 'error' }` para outros
-    - Implementar `findTermId()`: GET para `/api/translations/.../units/?q={key}` para buscar `unitId` de term existente
+    - Implementar `findTermId()`: GET para `/api/translations/.../units/?q=key:="{key}"` para buscar `unitId` de term existente com o operador de busca exata do Weblate
     - Implementar `editTerm()`: PATCH para `/api/units/{id}/` com `Authorization: Token {token}`; retornar `{ kind: 'success' }` para HTTP 200, `{ kind: 'not_found' }` para 404, `{ kind: 'auth_error' }` para 401/403, `{ kind: 'error' }` para outros
     - Implementar lógica de retry: timeout 10s, até 3 tentativas, intervalo 2s, apenas para erros de rede/timeout e HTTP 5xx
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 7.1, 7.2, 7.3_

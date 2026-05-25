@@ -19,7 +19,7 @@ O fluxo principal é:
 **Weblate API (v4.5+):** A partir da versão 4.5, glossários são armazenados como componentes/traduções/unidades regulares. Os endpoints relevantes são:
 - Criar termo: `POST /api/translations/{project}/{component}/{language}/units/` com campos `key`, `value` (array), `state`
 - Editar termo: `PATCH /api/units/{id}/` com campos `target` (array), `state`
-- Buscar termo existente: `GET /api/translations/{project}/{component}/{language}/units/?q={key}`
+- Buscar termo existente: `GET /api/translations/{project}/{component}/{language}/units/?q=key:="{key}"` usando o operador de busca exata do Weblate
 - Autenticação: cabeçalho `Authorization: Token {token}`
 - HTTP 201 = criado com sucesso; HTTP 400 com mensagem de chave duplicada = já existente; HTTP 401/403 = erro de autenticação
 
@@ -270,7 +270,7 @@ interface ImportJob {
 Fluxo por Term:
 1. `POST /api/translations/{project}/{component}/{language}/units/` usando `config.defaultLanguage` como `{language}`; nenhum outro idioma realiza criação via `POST`
 2. Se HTTP 201 → marca como "criado", prossegue para edição com o `unitId` retornado
-3. Se HTTP 400 com chave duplicada → marca como "já existente", busca `unitId` via `GET /units/?q={key}`, prossegue para edição
+3. Se HTTP 400 com chave duplicada → marca como "já existente", busca `unitId` via `GET /units/?q=key:="{key}"`, prossegue para edição
 4. Se HTTP 401/403 → interrompe o job imediatamente
 5. Se outro erro → registra, contabiliza como erro, prossegue para o próximo Term
 6. `PATCH /api/units/{unitId}/` com o valor de tradução
@@ -380,7 +380,7 @@ Com `fastlate.defaultLanguage = "pt_BR"`, as chaves são `Salvar` e `Cancelar`. 
 | Operação | Método | Endpoint |
 |----------|--------|----------|
 | Criar termo | POST | `/api/translations/{project}/{component}/{language}/units/`, com `{language}` vindo de `fastlate.defaultLanguage` |
-| Buscar termo existente | GET | `/api/translations/{project}/{component}/{language}/units/?q={key}`, com `{language}` vindo de `Language_Header.code` |
+| Buscar termo existente | GET | `/api/translations/{project}/{component}/{language}/units/?q=key:="{key}"`, com `{language}` vindo de `Language_Header.code` |
 | Editar termo | PATCH | `/api/units/{id}/` |
 
 ---

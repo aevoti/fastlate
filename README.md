@@ -125,7 +125,7 @@ Fluxo de importação:
 - Se o Weblate retornar HTTP 400 com qualquer mensagem de resposta contendo `already exist`, o Fastlate registra um aviso e continua.
 - Se o CSV não tiver uma coluna cujo código seja igual a `fastlate.defaultLanguage`, o Fastlate interrompe a importação com o erro `Coluna com idioma padrão não encontrada`.
 - O Fastlate nunca envia `POST` de criação de chave para endpoints de idiomas diferentes do idioma padrão configurado.
-- Para cada valor de idioma preenchido, o Fastlate pesquisa a chave exata naquele idioma e usa o ID da unidade retornado.
+- Para cada valor de idioma preenchido, o Fastlate pesquisa a chave exata naquele idioma com `q=key:="{chave}"` e usa o ID da unidade retornado.
 - O Fastlate só envia `PATCH` depois que a chave exata é encontrada naquele idioma.
 - Se a chave exata não for encontrada para um idioma, o Fastlate ignora aquele valor e registra um erro.
 - Depois que a importação começa, o preview permanece aberto para conferência.
@@ -142,7 +142,7 @@ flowchart TD
   F -- "Não" --> H["Erro: coluna com idioma padrão não encontrada"]
   G --> I["Para cada coluna de idioma"]
   I --> J["Para cada valor preenchido"]
-  J --> K["GET da chave exata naquele idioma"]
+  J --> K["GET q=key:='...' da chave exata naquele idioma"]
   K --> L{"Chave exata encontrada?"}
   L -- "Não" --> M["Registrar erro e ignorar valor"]
   L -- "Sim" --> N["PATCH da unidade com o valor"]
