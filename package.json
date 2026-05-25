@@ -4,7 +4,7 @@
   "private": true,
   "description": "%extension.description%",
   "displayName": "Fastlate",
-  "publisher": "aevo",
+  "publisher": "fastlate",
   "license": "MIT",
   "main": "./out/extension.js",
   "engines": {

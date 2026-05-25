@@ -96,7 +96,7 @@ function configureValidSettings(defaultLanguage = 'pt'): void {
 
 function createContext(): vscode.ExtensionContext {
   return {
-    extensionPath: 'C:\\GitHub_Repos\\aevo-tools\\packages\\fastlate',
+    extensionPath: 'C:\\GitHub_Repos\\fastlate\\packages\\fastlate',
     secrets: mockSecrets,
     subscriptions: [],
   } as unknown as vscode.ExtensionContext;

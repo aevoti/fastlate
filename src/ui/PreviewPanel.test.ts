@@ -103,7 +103,7 @@ describe('PreviewPanel', () => {
           languageHeaders: sampleLanguages,
           terms: sampleTerms,
         },
-        extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\aevo-tools\\packages\\fastlate') as never,
+        extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\fastlate\\packages\\fastlate') as never,
       });
 
       receiveMessage?.({ command: 'import' });
@@ -131,7 +131,7 @@ describe('PreviewPanel', () => {
           languageHeaders: sampleLanguages,
           terms: sampleTerms,
         },
-        extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\aevo-tools\\packages\\fastlate') as never,
+        extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\fastlate\\packages\\fastlate') as never,
       });
 
       panel.showImporting();
@@ -160,7 +160,7 @@ describe('PreviewPanel', () => {
           languageHeaders: sampleLanguages,
           terms: sampleTerms,
         },
-        extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\aevo-tools\\packages\\fastlate') as never,
+        extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\fastlate\\packages\\fastlate') as never,
       });
 
       panel.showResult('Fastlate: importacao concluida.');
