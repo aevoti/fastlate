@@ -4,6 +4,7 @@
   "private": true,
   "description": "%extension.description%",
   "displayName": "Fastlate",
+  "icon": "fastlate.png",
   "publisher": "fastlate",
   "license": "MIT",
   "main": "./out/extension.js",

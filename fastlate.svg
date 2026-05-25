@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="sheetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#107C41" />
+      <stop offset="100%" stop-color="#1F9A55" />
+    </linearGradient>
+    <linearGradient id="transGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A66C2" />
+      <stop offset="100%" stop-color="#00B4DB" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <g filter="url(#dropShadow)">
+    <rect x="64" y="64" width="324" height="324" rx="24" fill="url(#sheetGrad)" />
+    <line x1="146" y1="64" x2="146" y2="388" stroke="#ffffff" stroke-width="4" stroke-opacity="0.3" />
+    <line x1="256" y1="64" x2="256" y2="388" stroke="#ffffff" stroke-width="4" stroke-opacity="0.3" />
+    <line x1="64" y1="146" x2="388" y2="146" stroke="#ffffff" stroke-width="4" stroke-opacity="0.3" />
+    <line x1="64" y1="228" x2="388" y2="228" stroke="#ffffff" stroke-width="4" stroke-opacity="0.3" />
+    <line x1="64" y1="310" x2="388" y2="310" stroke="#ffffff" stroke-width="4" stroke-opacity="0.3" />
+  </g>
+
+  <g filter="url(#dropShadow)">
+    <path d="M 224,180 C 224,146.8 250.8,120 284,120 L 420,120 C 453.2,120 480,146.8 480,180 L 480,316 C 480,349.2 453.2,376 420,376 L 350,376 L 270,430 L 270,376 C 244,376 224,356 224,330 Z" fill="url(#transGrad)" />
+
+    <path d="M 312,280 L 326,236 L 354,236 L 368,280 M 319,252 L 361,252" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <path d="M 340,205 L 340,225" stroke="#ffffff" stroke-width="6" stroke-linecap="round" fill="none" />
+
+    <path d="M 402,205 L 438,205 M 420,205 L 420,230 M 396,236 C 420,236 430,260 444,280 M 444,238 C 430,250 412,268 394,280" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </g>
+
+  <g filter="url(#dropShadow)">
+    <circle cx="210" cy="210" r="46" fill="#ffffff" />
+    <path d="M 185,210 L 225,210 M 210,195 L 227,210 L 210,225" stroke="#0A66C2" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  </g>
+</svg>
