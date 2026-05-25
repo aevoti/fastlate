@@ -152,34 +152,3 @@ flowchart TD
   P -- "Sim" --> J
   P -- "Não" --> Q["Mostrar resumo final com chaves que falharam"]
 ```
-
-## Mudanças recentes
-
-- Fastlate: faz o botão de importação do preview mudar visualmente para `Importando...` enquanto os termos são enviados.
-- Fastlate: atualiza o estado do preview para concluído ou erro depois que a importação termina.
-- Fastlate: re-renderiza o painel de preview para os estados de progresso e finalização da importação.
-- Fastlate: mantém o preview de importação aberto após enviar os termos e lista as chaves com falha na notificação final.
-- Fastlate: restaurou a criação via `POST` com valor principal antes da busca exata e do `PATCH`.
-- Fastlate: trata respostas HTTP 400 de chave duplicada do Weblate como avisos quando qualquer mensagem de resposta contém `already exist`.
-- Fastlate: aceita HTTP 200 e 201 do Weblate como respostas de criação de chave bem-sucedidas.
-- Fastlate: especifica `fastlate.defaultLanguage` como idioma padrão configurável para localizar a coluna de chave e limitar o `POST` de criação.
-- Fastlate: atualizou a referência de CSV, parser, preview e fluxo de importação para aceitar várias colunas de idioma.
-- Fastlate: concluiu a cobertura da Property 3 do parser para filtragem de linhas inválidas e atualizou `fast-check` para `^4.8.0`.
-- Fastlate: adicionou cobertura unitária para o HTML somente leitura do `PreviewPanel`.
-- Fastlate: adicionou cobertura de propriedades garantindo que o `PreviewPanel` renderize todos os dados parseados.
-- Fastlate: adicionou cobertura unitária para tratamento de status, headers de autorização e retentativas do `WeblateHttpClient`.
-- Fastlate: adicionou cobertura de propriedades garantindo que as requisições para a API do Weblate sempre incluam o token de autorização.
-- Fastlate: adicionou cobertura de propriedades para o comportamento de retentativa de rede do `WeblateHttpClient`.
-- Fastlate: adicionou cobertura unitária para fluxos de criação, edição, erro, autenticação, cancelamento e progresso do `ImportJob`.
-- Fastlate: adicionou cobertura de propriedades para a sequência de chamadas de API do `ImportJob`.
-- Fastlate: adicionou cobertura de propriedades para a correção do resumo final do `ImportJob`.
-- Fastlate: adicionou cobertura de integração para o fluxo completo do comando de importação.
-- Fastlate: concluiu o checkpoint final com a suíte completa de testes passando.
-- Fastlate: reconciliou a cobertura unitária opcional do `ConfigurationService`.
-- Fastlate: reconciliou a cobertura de propriedades opcional do `ConfigurationService`.
-- Fastlate: reconciliou a cobertura unitária opcional do `CsvParser`.
-- Fastlate: reconciliou a cobertura de propriedade round-trip opcional do `CsvParser`.
-- Fastlate: reconciliou a cobertura de invariância de delimitador opcional do `CsvParser`.
-- Fastlate: atualizou dependências de desenvolvimento para resolver vulnerabilidades do `npm audit`.
-- Fastlate: removeu a configuração redundante de idioma; as importações agora usam o código do `Language_Header` do CSV.
-- Fastlate: adicionou uma view na Activity Bar com status de configuração e ação de importação.
