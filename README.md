@@ -1,34 +1,14 @@
 # Fastlate
 
-Monorepo privado para extensões internas do VSCode.
-
-## Estrutura
-
-```text
-Fastlate/
-|-- packages/
-|   `-- fastlate/        # Fastlate: extensão VSCode para importar traduções no Weblate
-|-- package.json         # Raiz do workspace
-|-- .gitignore
-`-- README.md
-```
-
-## Pacotes
-
-| Pacote | Descrição |
-|--------|-----------|
-| `fastlate` | Fastlate: extensão VSCode para importar traduções no Weblate |
+Extensão VSCode para importar traduções de arquivos CSV para o Weblate.
 
 ## Começando
 
 ```bash
-# Instalar todas as dependências do workspace
 npm install
 
-# Compilar todos os pacotes
-npm run build
+npm run compile
 
-# Rodar testes em todos os pacotes
 npm run test
 ```
 
@@ -42,7 +22,7 @@ npm run test
 Gere e instale a extensão como um pacote local `.vsix` do VSCode:
 
 ```powershell
-cd C:\GitHub_Repos\Fastlate\packages\fastlate
+cd C:\GitHub_Repos\Fastlate
 npx vsce package
 code --install-extension fastlate-0.0.1.vsix
 ```
