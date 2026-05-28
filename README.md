@@ -48,7 +48,7 @@ Em seguida, use a view `Fastlate` na Activity Bar ou execute o comando `Fastlate
 
 ## Referência de CSV do Fastlate
 
-O Fastlate aceita arquivos CSV com uma coluna dedicada para chave ou apenas com colunas de idioma.
+O Fastlate aceita arquivos CSV com delimitador ponto e vírgula (`;`), com uma coluna dedicada para chave ou apenas com colunas de idioma.
 
 Formato com coluna dedicada para chave:
 
@@ -61,10 +61,10 @@ Formato com coluna dedicada para chave:
 Exemplo com coluna de chave:
 
 ```csv
-label,Português,English,Español
-code,pt,en,es
-button.save,Salvar,Save,Guardar
-button.cancel,Cancelar,Cancel,Cancelar
+label;Português;English;Español
+code;pt;en;es
+button.save;Salvar;Save;Guardar
+button.cancel;Cancelar;Cancel;Cancelar
 ```
 
 Formato somente com idiomas:

@@ -6,13 +6,8 @@ import type { ParseResult, ParseError, Result } from '../types/index';
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Builds a minimal valid CSV string with the given rows (comma-delimited). */
+/** Builds a minimal valid CSV string with the given rows (semicolon-delimited). */
 function buildCsv(rows: string[][]): string {
-  return rows.map((row) => row.join(',')).join('\n');
-}
-
-/** Builds a minimal valid CSV string with semicolon delimiter. */
-function buildCsvSemicolon(rows: string[][]): string {
   return rows.map((row) => row.join(';')).join('\n');
 }
 
@@ -51,11 +46,11 @@ describe('CsvParser', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Requirement 2.4 — Auto-detect delimiter (comma vs semicolon)
+  // Requirement 2.4 - Semicolon delimiter
   // -------------------------------------------------------------------------
 
-  describe('delimiter detection (Requirement 2.4)', () => {
-    it('parses a CSV with comma delimiter correctly', () => {
+  describe('delimiter handling (Requirement 2.4)', () => {
+    it('parses a CSV with semicolon delimiter correctly', () => {
       const csv = buildCsv(VALID_ROWS);
       mockReadFileSync.mockReturnValue(csv);
 
@@ -70,18 +65,15 @@ describe('CsvParser', () => {
       expect(result.value.terms[1]).toMatchObject({ key: 'button.cancel', value: 'Cancelar', sourceRow: 4 });
     });
 
-    it('parses a CSV with semicolon delimiter correctly', () => {
-      const csv = buildCsvSemicolon(VALID_ROWS);
+    it('rejects a comma-delimited CSV as insufficient columns', () => {
+      const csv = VALID_ROWS.map((row) => row.join(',')).join('\n');
       mockReadFileSync.mockReturnValue(csv);
 
       const result = parser.parseFile('/fake/file.csv');
 
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
-      expect(result.value.languageHeader.name).toBe('Português');
-      expect(result.value.languageHeader.code).toBe('pt');
-      expect(result.value.terms).toHaveLength(2);
-      expect(result.value.terms[0]).toMatchObject({ key: 'button.save', value: 'Salvar' });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.kind).toBe('insufficient_columns');
     });
   });
 
@@ -407,7 +399,7 @@ describe('CsvParser', () => {
     });
 
     it('reads language names and codes from column A when the CSV has no key column', () => {
-      const csv = buildCsvSemicolon([
+      const csv = buildCsv([
         ['Português', 'Inglês', 'Espanhol', 'Francês'],
         ['pt_BR', 'en', 'es', 'fr'],
         ['bola', 'ball', 'pelota', 'balle'],

@@ -50,7 +50,7 @@ A extensão VSCode **Fastlate** automatiza o processo de importação de termos 
 2. WHEN o usuário selecionar um arquivo cuja extensão corresponda aos formatos aceitos, THE Parser SHALL ler o arquivo e extrair os termos de tradução.
 3. THE Parser SHALL interpretar a linha 1 da planilha como os nomes dos idiomas e a linha 2 como os códigos dos idiomas, sendo que as linhas de dados com os Terms começam a partir da linha 3.
 4. THE Extension SHALL usar os códigos de idioma lidos da linha 2 da planilha (`Language_Header.code`) como idiomas alvo nas requisições ao Weblate.
-5. WHEN o Parser processar um arquivo CSV, THE Parser SHALL detectar automaticamente o delimitador utilizado (vírgula `,` ou ponto-e-vírgula `;`).
+5. WHEN o Parser processar um arquivo CSV, THE Parser SHALL usar ponto-e-vírgula (`;`) como delimitador obrigatório.
 6. IF o arquivo selecionado estiver corrompido ou não puder ser lido, THEN THE Parser SHALL retornar um erro descritivo e interromper o Import_Job.
 7. IF o arquivo não contiver nenhum Term após a linha 2 (Language_Header), THEN THE Extension SHALL exibir uma mensagem informando que a planilha está vazia e interromper o Import_Job.
 8. THE Parser SHALL produzir uma lista de Terms com chave e valor não nulos para todos os arquivos de planilha válidos.

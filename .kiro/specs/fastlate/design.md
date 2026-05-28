@@ -23,7 +23,7 @@ O fluxo principal é:
 - Autenticação: cabeçalho `Authorization: Token {token}`
 - HTTP 201 = criado com sucesso; HTTP 400 com mensagem de chave duplicada = já existente; HTTP 401/403 = erro de autenticação
 
-**Parser CSV:** A biblioteca [papaparse](https://www.papaparse.com/) é a escolha padrão para parsing de CSV em Node.js/TypeScript. Suporta detecção automática de delimitador, encoding UTF-8 com BOM, e leitura síncrona de strings.
+**Parser CSV:** A biblioteca [papaparse](https://www.papaparse.com/) é a escolha padrão para parsing de CSV em Node.js/TypeScript. O Fastlate usa ponto-e-vírgula (`;`) como delimitador obrigatório, com suporte a encoding UTF-8 com BOM e leitura síncrona de strings.
 
 **VSCode Webview:** O Preview_Panel será implementado como um `vscode.WebviewPanel` com HTML/CSS/JS embutido, comunicando-se com a extensão via `postMessage`. A visualização lateral será implementada como um `vscode.WebviewViewProvider`, contribuída por `viewsContainers.activitybar` e `views`, para mostrar o estado de configuração e iniciar o mesmo comando de importação.
 
@@ -128,7 +128,7 @@ type ParseError =
 
 Comportamento:
 - Usa `papaparse` com `dynamicTyping: false` para preservar valores exatos das células como strings
-- Detecta automaticamente o delimitador (vírgula ou ponto-e-vírgula) via `delimiter: ''` (auto-detect do papaparse)
+- Usa ponto-e-vírgula (`;`) como delimitador obrigatório via `delimiter: ';'`
 - Decodifica UTF-8 com BOM removendo o BOM (`\uFEFF`) antes do parsing
 - Linha 1 = nomes dos idiomas, linha 2 = códigos dos idiomas, linhas 3+ = dados
 - CSVs com coluna dedicada usam a coluna A como chave e as colunas B+ como idiomas
@@ -456,7 +456,7 @@ Cada propriedade do design é implementada como um único teste PBT com mínimo 
 | P1: Preservação de valores | Strings arbitrárias (Unicode, espaços, especiais) | `parser.parseFile(serialize(terms)).terms[i].value === original` |
 | P2: Round-trip CSV | Listas de Terms com chaves/valores arbitrários | `parse(serialize(terms))` ≡ `terms` |
 | P3: Rejeição de linhas inválidas | CSVs com mix de linhas válidas e inválidas | `result.terms.length === countValidRows(csv)` |
-| P4: Invariância de delimitador | Listas de Terms sem vírgulas/ponto-e-vírgulas nas células | `parse(serializeComma(t))` ≡ `parse(serializeSemicolon(t))` |
+| P4: Delimitador ponto-e-vírgula | Listas de Terms sem ponto-e-vírgula nas células | `parse(serializeSemicolon(t))` preserva os Terms |
 | P5: Validação de configuração | Configurações com campos ausentes/brancos/URLs inválidas, incluindo `defaultLanguage` ausente ou branco | `validate(config).isError === true` |
 
 ### Testes de Integração
@@ -481,9 +481,9 @@ Cada propriedade do design é implementada como um único teste PBT com mínimo 
 
 **Validates: Requirements 8.1, 8.2, 2.2, 2.3, 3.1**
 
-### Property 2: Invariância ao delimitador
+### Property 2: Delimitador ponto-e-vírgula
 
-*Para qualquer* lista de Terms cujas chaves e valores não contenham vírgulas nem ponto-e-vírgulas, serializar como CSV com delimitador vírgula e serializar com delimitador ponto-e-vírgula devem produzir, após parsing, listas de Terms equivalentes.
+*Para qualquer* lista de Terms cujas chaves e valores não contenham ponto-e-vírgula, serializar como CSV com delimitador ponto-e-vírgula deve produzir, após parsing, uma lista de Terms equivalente.
 
 **Validates: Requirements 2.4**
 

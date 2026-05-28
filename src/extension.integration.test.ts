@@ -63,7 +63,7 @@ const mockSecrets = {
   delete: jest.fn(),
 };
 
-function createCsvFile(content = 'label,Português\ncode,pt\nbutton.save,Salvar\nbutton.cancel,Cancelar'): string {
+function createCsvFile(content = 'label;Português\ncode;pt\nbutton.save;Salvar\nbutton.cancel;Cancelar'): string {
   const filePath = path.join(
     os.tmpdir(),
     `fastlate-integration-${Date.now()}-${Math.random().toString(36).slice(2)}.csv`,
@@ -308,7 +308,7 @@ describe('Fastlate extension integration flow', () => {
 
   it('creates primary keys without values, then searches and patches every language', async () => {
     const csvPath = createCsvFile(
-      'label,Português,English\ncode,pt,en\nbutton.save,Salvar,Save\nbutton.cancel,Cancelar,Cancel',
+      'label;Português;English\ncode;pt;en\nbutton.save;Salvar;Save\nbutton.cancel;Cancelar;Cancel',
     );
     mockWindow.showOpenDialog.mockResolvedValue([{ fsPath: csvPath }]);
     mockCreateKey
@@ -344,7 +344,7 @@ describe('Fastlate extension integration flow', () => {
   it('creates keys from Portuguese when Portuguese is not the first language column', async () => {
     configureValidSettings('pt_BR');
     const csvPath = createCsvFile(
-      'label,English,Português\ncode,en,pt_BR\nbutton.save,Save,Salvar\nbutton.cancel,Cancel,Cancelar',
+      'label;English;Português\ncode;en;pt_BR\nbutton.save;Save;Salvar\nbutton.cancel;Cancel;Cancelar',
     );
     mockWindow.showOpenDialog.mockResolvedValue([{ fsPath: csvPath }]);
     mockCreateKey
@@ -374,7 +374,7 @@ describe('Fastlate extension integration flow', () => {
 
   it('shows an error when the CSV has no default language column', async () => {
     const csvPath = createCsvFile(
-      'label,English,Español\ncode,en,es\nbutton.save,Save,Guardar\nbutton.cancel,Cancel,Cancelar',
+      'label;English;Español\ncode;en;es\nbutton.save;Save;Guardar\nbutton.cancel;Cancel;Cancelar',
     );
     mockWindow.showOpenDialog.mockResolvedValue([{ fsPath: csvPath }]);
     try {

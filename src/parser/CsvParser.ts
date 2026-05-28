@@ -57,13 +57,13 @@ export class CsvParser {
     // -----------------------------------------------------------------------
     // 3. Parse with papaparse
     //    - dynamicTyping: false  → all cells remain strings (Req 8.1, 8.2)
-    //    - delimiter: ''         → auto-detect comma vs semicolon (Req 2.4)
+    //    - delimiter: ';'        → Fastlate accepts semicolon-delimited CSV files
     //    - skipEmptyLines: false → we handle empty lines ourselves so that
     //                             row numbers stay accurate
     // -----------------------------------------------------------------------
     const parsed = Papa.parse<string[]>(raw, {
       dynamicTyping: false,
-      delimiter: '',
+      delimiter: ';',
       skipEmptyLines: false,
     });
 

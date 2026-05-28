@@ -153,7 +153,7 @@ describe('Property 3: Filtragem de linhas inválidas', () => {
           const validRow: DataRow = { kind: 'valid', key: 'key1', value: 'value1' };
           const allRows: DataRow[] = [...rowsBefore, validRow, ...rowsAfter];
 
-          const delimiter = ',';
+          const delimiter = ';';
 
           // Build CSV:
           //   Row 1: language name in column B
@@ -267,7 +267,7 @@ describe('Property 3: Filtragem de linhas inválidas', () => {
           emptyValueKeys: fc.array(nonEmptyCellArb, { minLength: 0, maxLength: 10 }),
         }),
         ({ langName, langCode, validKeys, emptyValueKeys }: EmptyValueCase) => {
-          const delimiter = ',';
+          const delimiter = ';';
 
           const headerRow1 = rowToCsvLine('', langName, delimiter);
           const headerRow2 = rowToCsvLine('', langCode, delimiter);

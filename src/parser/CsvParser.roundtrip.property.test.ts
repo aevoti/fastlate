@@ -26,12 +26,12 @@ import type { Term } from '../types/index';
  * Serializes a list of Terms into a CSV string that the CsvParser can parse.
  *
  * CSV structure:
- *   Row 1: ,<langName>   (column A unused, column B = language name)
- *   Row 2: ,<langCode>   (column A unused, column B = language code)
- *   Row 3+: <key>,<value>
+ *   Row 1: ;<langName>   (column A unused, column B = language name)
+ *   Row 2: ;<langCode>   (column A unused, column B = language code)
+ *   Row 3+: <key>;<value>
  *
  * Uses papaparse.unparse to ensure correct RFC 4180 quoting for cells that
- * contain commas, double-quotes, or newlines.
+ * contain semicolons, double-quotes, or newlines.
  */
 function serializeTermsToCsv(
   terms: Array<{ key: string; value: string }>,
@@ -44,7 +44,7 @@ function serializeTermsToCsv(
     ...terms.map((t) => [t.key, t.value]),
   ];
 
-  return Papa.unparse(rows, { newline: '\n' });
+  return Papa.unparse(rows, { delimiter: ';', newline: '\n' });
 }
 
 /**

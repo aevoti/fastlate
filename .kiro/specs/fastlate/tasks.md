@@ -49,7 +49,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
   - [x] 3.1 Implementar `CsvParser` com papaparse
     - Criar `src/parser/CsvParser.ts`
     - Ler arquivo com `fs.readFileSync`, remover BOM (`\uFEFF`) se presente
-    - Usar `papaparse.parse()` com `dynamicTyping: false` e `delimiter: ''` (auto-detect)
+    - Usar `papaparse.parse()` com `dynamicTyping: false` e `delimiter: ';'`
     - Extrair `LanguageHeader` das linhas 1 e 2; retornar `{ kind: 'missing_language_header' }` se vazias
     - Retornar `{ kind: 'insufficient_columns' }` se menos de 2 colunas
     - Retornar `{ kind: 'empty_spreadsheet' }` se nenhum term após linha 2
@@ -57,7 +57,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.9, 3.1, 3.2, 3.3, 3.4, 8.1, 8.2, 8.3_
 
   - [x]* 3.2 Escrever testes unitários para `CsvParser`
-    - Testar CSV com delimitador vírgula e ponto-e-vírgula
+    - Testar CSV com delimitador ponto-e-vírgula
     - Testar CSV com BOM UTF-8
     - Testar arquivo com Language_Header ausente (linha 1 ou 2 vazia)
     - Testar planilha sem terms (apenas Language_Header)
@@ -74,10 +74,10 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
     - Serializar em CSV, fazer parsing e verificar que chaves e valores são idênticos byte a byte
     - **Validates: Requirements 8.1, 8.2, 2.2, 2.3, 3.1**
 
-  - [x]* 3.4 Escrever property test de invariância ao delimitador (Property 2)
-    - **Property 2: Invariância ao delimitador**
-    - Gerar Terms sem vírgulas nem ponto-e-vírgulas nas células
-    - Verificar que `parse(serializeComma(t))` ≡ `parse(serializeSemicolon(t))`
+  - [x]* 3.4 Escrever property test de delimitador ponto-e-vírgula (Property 2)
+    - **Property 2: Delimitador ponto-e-vírgula**
+    - Gerar Terms sem ponto-e-vírgula nas células
+    - Verificar que `parse(serializeSemicolon(t))` preserva os Terms
     - **Validates: Requirements 2.4**
 
   - [x]* 3.5 Escrever property test de filtragem de linhas inválidas (Property 3)
