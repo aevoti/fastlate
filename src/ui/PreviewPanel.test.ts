@@ -43,6 +43,7 @@ describe('PreviewPanel', () => {
     it('renders a read-only terms table with Chave and language value columns', () => {
       const html = buildPreviewHtml();
 
+      expect(html).toContain('<div class="table-wrap">');
       expect(html).toContain('<table>');
       expect(html).toContain('<th>Chave</th>');
       expect(html).toContain('<th>Português (pt-BR)</th>');
@@ -53,6 +54,16 @@ describe('PreviewPanel', () => {
       expect(html).toContain('<td>button.cancel</td>');
       expect(html).toContain('<td>Cancelar</td>');
       expect(html).toContain('<td>Cancel</td>');
+    });
+
+    it('wraps the terms table in a scrollable container for large previews', () => {
+      const html = buildPreviewHtml();
+
+      expect(html).toContain('.table-wrap');
+      expect(html).toContain('overflow: auto;');
+      expect(html).toContain('max-height: min(62vh, 680px);');
+      expect(html).toContain('width: max-content;');
+      expect(html).toContain('min-width: 100%;');
     });
 
     it('renders total terms and all language labels', () => {

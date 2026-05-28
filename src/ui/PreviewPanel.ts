@@ -194,17 +194,29 @@ export class PreviewPanel {
       margin-bottom: 12px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .table-wrap {
+      max-height: min(62vh, 680px);
+      overflow: auto;
       margin-bottom: 20px;
+      border: 1px solid var(--vscode-panel-border, #444);
+    }
+
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
     }
 
     th, td {
       text-align: left;
       padding: 6px 10px;
       border: 1px solid var(--vscode-panel-border, #444);
+      min-width: 140px;
       word-break: break-word;
+    }
+
+    th:first-child, td:first-child {
+      min-width: 180px;
     }
 
     th {
@@ -276,17 +288,19 @@ export class PreviewPanel {
 
   <div class="total">${t('preview.totalTerms', { total: totalTerms })}</div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>${t('preview.key')}</th>
-        ${tableHeaders}
-      </tr>
-    </thead>
-    <tbody>
-      ${tableRows}
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>${t('preview.key')}</th>
+          ${tableHeaders}
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+      </tbody>
+    </table>
+  </div>
 
   <div class="actions">
     <button id="btn-import"${importDisabled}>${this._escapeHtml(importButtonText)}</button>
