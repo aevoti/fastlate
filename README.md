@@ -105,8 +105,8 @@ Fluxo de importação:
 - Se o Weblate retornar HTTP 400 com qualquer mensagem de resposta contendo `already exist`, o Fastlate registra um aviso e continua.
 - Se o CSV não tiver uma coluna cujo código seja igual a `fastlate.defaultLanguage`, o Fastlate interrompe a importação com o erro `Coluna com idioma padrão não encontrada`.
 - O Fastlate nunca envia `POST` de criação de chave para endpoints de idiomas diferentes do idioma padrão configurado.
-- Para cada valor de idioma preenchido, o Fastlate pesquisa a chave exata naquele idioma com `q=key:="{chave}"` e usa o ID da unidade retornado.
-- O Fastlate só envia `PATCH` depois que a chave exata é encontrada naquele idioma.
+- Para cada idioma com valores preenchidos, o Fastlate lista os IDs das unidades uma vez com `GET /api/units/?q=project:="{project}" component:="{component}" language:="{language}"` e monta um mapa `chave -> id`.
+- O Fastlate só envia `PATCH` depois que a chave exata existe no mapa daquele idioma.
 - Se a chave exata não for encontrada para um idioma, o Fastlate ignora aquele valor e registra um erro.
 - Depois que a importação começa, o preview permanece aberto para conferência.
 - Se algum valor falhar, a notificação final inclui as chaves afetadas.
@@ -121,14 +121,15 @@ flowchart TD
   F -- "Sim" --> G["POST das chaves de origem apenas no idioma padrão"]
   F -- "Não" --> H["Erro: coluna com idioma padrão não encontrada"]
   G --> I["Para cada coluna de idioma"]
-  I --> J["Para cada valor preenchido"]
-  J --> K["GET q=key:='...' da chave exata naquele idioma"]
-  K --> L{"Chave exata encontrada?"}
-  L -- "Não" --> M["Registrar erro e ignorar valor"]
-  L -- "Sim" --> N["PATCH da unidade com o valor"]
-  N --> O["Registrar valor editado"]
-  M --> P{"Há mais valores?"}
-  O --> P
-  P -- "Sim" --> J
-  P -- "Não" --> Q["Mostrar resumo final com chaves que falharam"]
+  I --> J["GET /api/units filtrado por projeto, componente e idioma"]
+  J --> K["Montar mapa chave -> id"]
+  K --> L["Para cada valor preenchido"]
+  L --> M{"Chave exata encontrada no mapa?"}
+  M -- "Não" --> N["Registrar erro e ignorar valor"]
+  M -- "Sim" --> O["PATCH da unidade com o valor"]
+  O --> P["Registrar valor editado"]
+  N --> Q{"Há mais valores?"}
+  P --> Q
+  Q -- "Sim" --> L
+  Q -- "Não" --> R["Mostrar resumo final com chaves que falharam"]
 ```

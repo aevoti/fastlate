@@ -185,6 +185,62 @@ describe('WeblateHttpClient', () => {
     });
   });
 
+  describe('listTermIds', () => {
+    it('uses the global units endpoint scoped by project, component, and language', async () => {
+      mockFetch.mockResolvedValue(response(200, { results: [], next: null }));
+
+      await client.listTermIds();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://weblate.example.com/api/units/?q=project%3A%3D%22project-slug%22%20component%3A%3D%22component-slug%22%20language%3A%3D%22pt%22',
+        expect.objectContaining({ method: 'GET' }),
+      );
+    });
+
+    it('returns a key to id map from paginated unit results', async () => {
+      mockFetch
+        .mockResolvedValueOnce(response(200, {
+          results: [
+            { id: 101, key: 'button.save' },
+            { id: 102, key: 'button.cancel' },
+          ],
+          next: 'https://weblate.example.com/api/units/?page=2',
+        }))
+        .mockResolvedValueOnce(response(200, {
+          results: [
+            { id: 103, key: 'button.ok' },
+            { id: 104, key: 'button.save' },
+          ],
+          next: null,
+        }));
+
+      await expect(client.listTermIds()).resolves.toEqual(new Map([
+        ['button.save', 101],
+        ['button.cancel', 102],
+        ['button.ok', 103],
+      ]));
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'https://weblate.example.com/api/units/?page=2',
+        expect.objectContaining({ method: 'GET' }),
+      );
+    });
+
+    it('returns the collected ids when a later page fails', async () => {
+      mockFetch
+        .mockResolvedValueOnce(response(200, {
+          results: [{ id: 101, key: 'button.save' }],
+          next: 'https://weblate.example.com/api/units/?page=2',
+        }))
+        .mockResolvedValueOnce(response(404));
+
+      await expect(client.listTermIds()).resolves.toEqual(new Map([
+        ['button.save', 101],
+      ]));
+    });
+  });
+
   describe('retry behavior', () => {
     it('retries HTTP 5xx exactly 3 times before returning an error', async () => {
       jest.useFakeTimers();

@@ -20,6 +20,9 @@ const RETRY_DELAY_MS = 2_000;
 /** Weblate "translated" state value. */
 const STATE_TRANSLATED = 20;
 
+/** Safety limit for paginated unit list requests. */
+const MAX_UNIT_LIST_PAGES = 100;
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -103,6 +106,12 @@ function numericId(value: unknown): number | null {
   return typeof record?.['id'] === 'number' ? record['id'] : null;
 }
 
+function stringField(value: unknown, field: string): string | null {
+  const record = objectRecord(value);
+  const fieldValue = record?.[field];
+  return typeof fieldValue === 'string' ? fieldValue : null;
+}
+
 function stringArrayContainsExact(value: unknown, expected: string): boolean {
   return Array.isArray(value) && value.some((item) => item === expected);
 }
@@ -134,8 +143,42 @@ function exactResultId(value: unknown, expectedKey: string): number | null {
 }
 
 function exactKeySearchQuery(key: string): string {
-  const escapedKey = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  return `key:="${escapedKey}"`;
+  return exactFieldSearchQuery('key', key);
+}
+
+function exactFieldSearchQuery(field: string, value: string): string {
+  const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `${field}:="${escapedValue}"`;
+}
+
+function scopedUnitsSearchQuery(config: WeblateConfiguration, languageCode: string): string {
+  return [
+    exactFieldSearchQuery('project', config.project),
+    exactFieldSearchQuery('component', config.component),
+    exactFieldSearchQuery('language', languageCode),
+  ].join(' ');
+}
+
+function nextPageUrl(value: unknown): string | null {
+  const record = objectRecord(value);
+  return typeof record?.['next'] === 'string' && record['next'].length > 0 ? record['next'] : null;
+}
+
+function addUnitIdsToMap(value: unknown, idsByKey: Map<string, number>): void {
+  const record = objectRecord(value);
+  const results = record?.['results'];
+
+  if (!Array.isArray(results)) {
+    return;
+  }
+
+  for (const result of results) {
+    const id = numericId(result);
+    const key = stringField(result, 'key');
+    if (id !== null && key !== null && !idsByKey.has(key)) {
+      idsByKey.set(key, id);
+    }
+  }
 }
 
 /**
@@ -225,6 +268,12 @@ export class WeblateHttpClient {
   private get translationsBaseUrl(): string {
     const { serverUrl, project, component } = this.config;
     return `${serverUrl}/api/translations/${project}/${component}/${this.languageCode}/units/`;
+  }
+
+  /** Builds the global unit list URL scoped by project, component, and language. */
+  private get scopedUnitsUrl(): string {
+    const query = scopedUnitsSearchQuery(this.config, this.languageCode);
+    return `${this.config.serverUrl}/api/units/?q=${encodeURIComponent(query)}`;
   }
 
   // -------------------------------------------------------------------------
@@ -322,6 +371,47 @@ export class WeblateHttpClient {
     }
 
     return null;
+  }
+
+  /**
+   * Lists unit IDs for this client's project, component, and language.
+   *
+   * Uses the global `/api/units/` endpoint with an explicit scope query so the
+   * import can resolve all `key -> id` pairs with one paginated lookup per
+   * language instead of one lookup per key.
+   */
+  async listTermIds(): Promise<Map<string, number>> {
+    const idsByKey = new Map<string, number>();
+    const headers: Record<string, string> = {
+      Authorization: this.authHeader,
+    };
+    let url: string | null = this.scopedUnitsUrl;
+    let pageCount = 0;
+
+    while (url !== null && pageCount < MAX_UNIT_LIST_PAGES) {
+      pageCount++;
+
+      let response: FetchResult;
+      try {
+        response = await fetchWithRetry({ method: 'GET', url, headers });
+      } catch {
+        return idsByKey;
+      }
+
+      if (response.status !== 200) {
+        return idsByKey;
+      }
+
+      try {
+        const data = await response.json();
+        addUnitIdsToMap(data, idsByKey);
+        url = nextPageUrl(data);
+      } catch {
+        return idsByKey;
+      }
+    }
+
+    return idsByKey;
   }
 
   /**

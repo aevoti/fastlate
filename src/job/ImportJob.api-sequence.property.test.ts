@@ -8,6 +8,7 @@ import type {
 
 const mockClient = {
   findTermId: jest.fn<Promise<number | null>, [string]>(),
+  listTermIds: jest.fn<Promise<Map<string, number>>, []>(),
   editTerm: jest.fn<Promise<TermEditResult>, [number, string]>(),
 };
 
@@ -27,13 +28,13 @@ const nonBlankTextArb: fc.Arbitrary<string> = fc
   .string({ minLength: 1, maxLength: 40 })
   .filter((value) => value.trim().length > 0);
 
-const termsArb: fc.Arbitrary<Term[]> = fc.array(
+const termsArb: fc.Arbitrary<Term[]> = fc.uniqueArray(
   fc.record({
     key: nonBlankTextArb,
     value: nonBlankTextArb,
     sourceRow: fc.integer({ min: 3, max: 10_000 }),
   }),
-  { minLength: 0, maxLength: 30 },
+  { minLength: 0, maxLength: 30, selector: (term) => term.key },
 );
 
 function createJobOptions(terms: Term[]) {
@@ -56,13 +57,16 @@ describe('Property 6: Sequência correta de chamadas de API por Term', () => {
     jest.clearAllMocks();
   });
 
-  it('realiza exatamente N buscas e N chamadas de edição para N terms criados previamente', async () => {
+  it('realiza uma busca em lote e N chamadas de edição para N terms criados previamente', async () => {
     await fc.assert(
       fc.asyncProperty(termsArb, async (terms) => {
         mockClient.findTermId.mockReset();
+        mockClient.listTermIds.mockReset();
         mockClient.editTerm.mockReset();
 
-        mockClient.findTermId.mockImplementation(async () => mockClient.findTermId.mock.calls.length);
+        mockClient.listTermIds.mockResolvedValue(new Map(
+          terms.map((term, index) => [term.key, index + 1]),
+        ));
         mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
         const summary = await new ImportJob().run(createJobOptions(terms));
@@ -73,11 +77,11 @@ describe('Property 6: Sequência correta de chamadas de API por Term', () => {
           onlyEdited: terms.length,
           errors: 0,
         });
-        expect(mockClient.findTermId).toHaveBeenCalledTimes(terms.length);
+        expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
+        expect(mockClient.findTermId).not.toHaveBeenCalled();
         expect(mockClient.editTerm).toHaveBeenCalledTimes(terms.length);
 
         terms.forEach((term, index) => {
-          expect(mockClient.findTermId).toHaveBeenNthCalledWith(index + 1, term.key);
           expect(mockClient.editTerm).toHaveBeenNthCalledWith(
             index + 1,
             index + 1,

@@ -49,7 +49,7 @@ describe('Property 5: Cabeçalho de autorização presente em todas as requisiç
     mockFetch.mockReset();
   });
 
-  it('POST, GET e PATCH incluem Authorization: Token {token}', async () => {
+  it('POST, unit list GET, exact GET e PATCH incluem Authorization: Token {token}', async () => {
     await fc.assert(
       fc.asyncProperty(
         configArb,
@@ -63,14 +63,20 @@ describe('Property 5: Cabeçalho de autorização presente em todas as requisiç
 
           mockFetch.mockResolvedValueOnce(response(200, {
             results: [{ id: unitId, key: term.key }],
+            next: null,
+          }));
+          await client.listTermIds();
+
+          mockFetch.mockResolvedValueOnce(response(200, {
+            results: [{ id: unitId, key: term.key }],
           }));
           await client.findTermId(term.key);
 
           mockFetch.mockResolvedValueOnce(response(200));
           await client.editTerm(unitId, term.value);
 
-          const calls = mockFetch.mock.calls.slice(-3);
-          expect(calls).toHaveLength(3);
+          const calls = mockFetch.mock.calls.slice(-4);
+          expect(calls).toHaveLength(4);
 
           for (const [, options] of calls) {
             expect(options).toEqual(

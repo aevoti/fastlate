@@ -9,6 +9,7 @@ import type { FastlateLogger } from '../services/FastlateLogger';
 
 const mockClient = {
   findTermId: jest.fn<Promise<number | null>, [string]>(),
+  listTermIds: jest.fn<Promise<Map<string, number>>, []>(),
   editTerm: jest.fn<Promise<TermEditResult>, [number, string]>(),
 };
 
@@ -66,13 +67,14 @@ function runJob(options: {
 describe('ImportJob', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockClient.listTermIds.mockResolvedValue(new Map([
+      ['button.save', 101],
+      ['button.cancel', 102],
+      ['button.ok', 103],
+    ]));
   });
 
-  it('looks up and edits all terms without creating them', async () => {
-    mockClient.findTermId
-      .mockResolvedValueOnce(101)
-      .mockResolvedValueOnce(102)
-      .mockResolvedValueOnce(103);
+  it('loads unit ids once and edits all terms without creating them', async () => {
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const progress = createProgress();
@@ -85,16 +87,18 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
-    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
+    expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
+    expect(mockClient.findTermId).not.toHaveBeenCalled();
     expect(mockClient.editTerm).toHaveBeenCalledTimes(3);
     expect(progress.report).toHaveBeenCalledTimes(3);
   });
 
   it('edits existing terms and reports onlyEdited = N', async () => {
-    mockClient.findTermId
-      .mockResolvedValueOnce(201)
-      .mockResolvedValueOnce(202)
-      .mockResolvedValueOnce(203);
+    mockClient.listTermIds.mockResolvedValue(new Map([
+      ['button.save', 201],
+      ['button.cancel', 202],
+      ['button.ok', 203],
+    ]));
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const summary = await runJob();
@@ -106,15 +110,17 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
-    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
+    expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
+    expect(mockClient.findTermId).not.toHaveBeenCalled();
     expect(mockClient.editTerm).toHaveBeenCalledTimes(3);
   });
 
-  it('looks up and edits terms without creating', async () => {
-    mockClient.findTermId
-      .mockResolvedValueOnce(301)
-      .mockResolvedValueOnce(302)
-      .mockResolvedValueOnce(303);
+  it('uses loaded unit ids when editing terms without creating', async () => {
+    mockClient.listTermIds.mockResolvedValue(new Map([
+      ['button.save', 301],
+      ['button.cancel', 302],
+      ['button.ok', 303],
+    ]));
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const job = new ImportJob();
@@ -134,15 +140,16 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
-    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
+    expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
+    expect(mockClient.findTermId).not.toHaveBeenCalled();
     expect(mockClient.editTerm).toHaveBeenCalledTimes(3);
   });
 
-  it('counts missing exact lookup results and continues with the next term', async () => {
-    mockClient.findTermId
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(102)
-      .mockResolvedValueOnce(103);
+  it('counts missing unit ids and continues with the next term', async () => {
+    mockClient.listTermIds.mockResolvedValue(new Map([
+      ['button.cancel', 102],
+      ['button.ok', 103],
+    ]));
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const logger = createLogger();
@@ -160,7 +167,6 @@ describe('ImportJob', () => {
   });
 
   it('interrupts immediately on authentication errors', async () => {
-    mockClient.findTermId.mockResolvedValue(101);
     mockClient.editTerm
       .mockResolvedValueOnce({ kind: 'success' })
       .mockResolvedValueOnce({ kind: 'auth_error' });
@@ -174,7 +180,6 @@ describe('ImportJob', () => {
 
   it('returns a partial summary when cancelled before the next term', async () => {
     const cancellationToken = createCancellationToken(false);
-    mockClient.findTermId.mockResolvedValue(101);
     mockClient.editTerm.mockImplementation(async () => {
       cancellationToken.isCancellationRequested = true;
       return { kind: 'success' };
@@ -192,8 +197,21 @@ describe('ImportJob', () => {
     expect(mockClient.editTerm).toHaveBeenCalledTimes(1);
   });
 
+  it('does not load unit ids when cancelled before processing starts', async () => {
+    const summary = await runJob({ cancellationToken: createCancellationToken(true) });
+
+    expect(summary).toEqual({
+      total: 3,
+      created: 0,
+      onlyEdited: 0,
+      errors: 0,
+      failedKeys: [],
+    });
+    expect(mockClient.listTermIds).not.toHaveBeenCalled();
+    expect(mockClient.editTerm).not.toHaveBeenCalled();
+  });
+
   it('reports progress after each processed term', async () => {
-    mockClient.findTermId.mockResolvedValue(101);
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const progress = createProgress();

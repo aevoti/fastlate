@@ -10,6 +10,7 @@ type TermOutcome = 'onlyEdited' | 'error';
 
 const mockClient = {
   findTermId: jest.fn<Promise<number | null>, [string]>(),
+  listTermIds: jest.fn<Promise<Map<string, number>>, []>(),
   editTerm: jest.fn<Promise<TermEditResult>, [number, string]>(),
 };
 
@@ -35,12 +36,12 @@ const termArb: fc.Arbitrary<Term> = fc.record({
   sourceRow: fc.integer({ min: 3, max: 10_000 }),
 });
 
-const runCaseArb: fc.Arbitrary<Array<{ term: Term; outcome: TermOutcome }>> = fc.array(
+const runCaseArb: fc.Arbitrary<Array<{ term: Term; outcome: TermOutcome }>> = fc.uniqueArray(
   fc.record({
     term: termArb,
     outcome: fc.constantFrom<TermOutcome>('onlyEdited', 'error'),
   }),
-  { minLength: 0, maxLength: 30 },
+  { minLength: 0, maxLength: 30, selector: (item) => item.term.key },
 );
 
 function createJobOptions(terms: Term[]) {
@@ -74,13 +75,14 @@ describe('Property 7: Correção do resumo final', () => {
     await fc.assert(
       fc.asyncProperty(runCaseArb, async (runCase) => {
         mockClient.findTermId.mockReset();
+        mockClient.listTermIds.mockReset();
         mockClient.editTerm.mockReset();
 
-        let unitId = 1;
-        mockClient.findTermId.mockImplementation(async () => {
-          const outcome = runCase[mockClient.findTermId.mock.calls.length - 1]?.outcome;
-          return outcome === 'error' ? null : unitId++;
-        });
+        mockClient.listTermIds.mockResolvedValue(new Map(
+          runCase
+            .filter((item) => item.outcome === 'onlyEdited')
+            .map((item, index) => [item.term.key, index + 1]),
+        ));
         mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
         const terms = runCase.map(({ term }) => term);

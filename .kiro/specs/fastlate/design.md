@@ -19,7 +19,7 @@ O fluxo principal é:
 **Weblate API (v4.5+):** A partir da versão 4.5, glossários são armazenados como componentes/traduções/unidades regulares. Os endpoints relevantes são:
 - Criar termo: `POST /api/translations/{project}/{component}/{language}/units/` com campos `key`, `value` (array), `state`
 - Editar termo: `PATCH /api/units/{id}/` com campos `target` (array), `state`
-- Buscar termo existente: `GET /api/translations/{project}/{component}/{language}/units/?q=key:="{key}"` usando o operador de busca exata do Weblate
+- Listar unidades existentes: `GET /api/units/?q=project:="{project}" component:="{component}" language:="{language}"` para montar um mapa `key -> id` por idioma
 - Autenticação: cabeçalho `Authorization: Token {token}`
 - HTTP 201 = criado com sucesso; HTTP 400 com mensagem de chave duplicada = já existente; HTTP 401/403 = erro de autenticação
 
@@ -221,11 +221,10 @@ interface WeblateHttpClient {
     term: Term
   ): Promise<TermCreationResult>;
 
-  findTermId(
+  listTermIds(
     config: WeblateConfiguration,
-    languageCode: string,
-    key: string
-  ): Promise<number | null>;
+    languageCode: string
+  ): Promise<Map<string, number>>;
 
   editTerm(
     config: WeblateConfiguration,
@@ -267,13 +266,13 @@ interface ImportJob {
 }
 ```
 
-Fluxo por Term:
+Fluxo de importação:
 1. `POST /api/translations/{project}/{component}/{language}/units/` usando `config.defaultLanguage` como `{language}`; nenhum outro idioma realiza criação via `POST`
-2. Se HTTP 201 → marca como "criado", prossegue para edição com o `unitId` retornado
-3. Se HTTP 400 com chave duplicada → marca como "já existente", busca `unitId` via `GET /units/?q=key:="{key}"`, prossegue para edição
+2. Se HTTP 201 → marca como "criado"; se HTTP 400 com chave duplicada → marca como "já existente" e continua
+3. Para cada idioma com valores preenchidos, lista unidades via `GET /api/units/?q=project:="{project}" component:="{component}" language:="{language}"` e monta um mapa `key -> id`
 4. Se HTTP 401/403 → interrompe o job imediatamente
 5. Se outro erro → registra, contabiliza como erro, prossegue para o próximo Term
-6. `PATCH /api/units/{unitId}/` com o valor de tradução
+6. Para cada Term do idioma, busca a chave exata no mapa local e executa `PATCH /api/units/{unitId}/` com o valor de tradução
 7. Atualiza progresso após conclusão de criação + edição
 
 Se a planilha não contiver uma coluna cujo `Language_Header.code` corresponda a `config.defaultLanguage`, a extensão exibe "Coluna com idioma padrão não encontrada" e interrompe o fluxo antes do `ImportJob`.
@@ -380,7 +379,7 @@ Com `fastlate.defaultLanguage = "pt_BR"`, as chaves são `Salvar` e `Cancelar`. 
 | Operação | Método | Endpoint |
 |----------|--------|----------|
 | Criar termo | POST | `/api/translations/{project}/{component}/{language}/units/`, com `{language}` vindo de `fastlate.defaultLanguage` |
-| Buscar termo existente | GET | `/api/translations/{project}/{component}/{language}/units/?q=key:="{key}"`, com `{language}` vindo de `Language_Header.code` |
+| Listar unidades existentes | GET | `/api/units/?q=project:="{project}" component:="{component}" language:="{language}"`, com `{language}` vindo de `Language_Header.code` |
 | Editar termo | PATCH | `/api/units/{id}/` |
 
 ---
@@ -507,7 +506,7 @@ Cada propriedade do design é implementada como um único teste PBT com mínimo 
 
 ### Property 6: Sequência correta de chamadas de API por Term
 
-*Para qualquer* lista de N Terms onde todas as criações retornam sucesso (HTTP 201 ou HTTP 400 com chave duplicada), o Import_Job deve realizar exatamente N chamadas POST de criação e exatamente N chamadas PATCH de edição — uma de cada por Term.
+*Para qualquer* lista de N Terms onde todas as criações retornam sucesso (HTTP 201 ou HTTP 400 com chave duplicada), o Import_Job deve realizar uma listagem de unidades por idioma e exatamente N chamadas PATCH de edição.
 
 **Validates: Requirements 4.1, 5.1**
 

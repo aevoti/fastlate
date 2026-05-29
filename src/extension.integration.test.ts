@@ -15,6 +15,7 @@ const mockPreviewShowResult = jest.fn();
 const mockPreviewShowError = jest.fn();
 const mockCreateKey = jest.fn();
 const mockFindTermId = jest.fn();
+const mockListTermIdsByLanguage = new Map<string, Map<string, number>>();
 const mockEditTerm = jest.fn();
 const mockOutputAppendLine = jest.fn();
 const mockCreateKeyLanguages: string[] = [];
@@ -33,6 +34,12 @@ const mockCreateKeyLanguages: string[] = [];
       return mockCreateKey(...args);
     },
     findTermId: mockFindTermId,
+    listTermIds: jest.fn(() =>
+      Promise.resolve(mockListTermIdsByLanguage.get(languageCode) ?? new Map([
+        ['button.save', 100],
+        ['button.cancel', 100],
+      ])),
+    ),
     editTerm: mockEditTerm,
   };
 });
@@ -134,6 +141,7 @@ describe('Fastlate extension integration flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCreateKeyLanguages.length = 0;
+    mockListTermIdsByLanguage.clear();
     configureValidSettings();
     mockSecrets.get.mockResolvedValue('secret-token');
     mockSecrets.store.mockResolvedValue(undefined);
@@ -183,7 +191,7 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(2);
       expect(mockCreateKey).toHaveBeenNthCalledWith(1, 'button.save', 'Salvar');
       expect(mockCreateKey).toHaveBeenNthCalledWith(2, 'button.cancel', 'Cancelar');
-      expect(mockFindTermId).toHaveBeenCalledTimes(2);
+      expect(mockFindTermId).not.toHaveBeenCalled();
       expect(mockEditTerm).toHaveBeenCalledTimes(2);
       expect(WeblateHttpClient).toHaveBeenCalledWith(
         {
@@ -284,9 +292,9 @@ describe('Fastlate extension integration flow', () => {
       kind: 'already_exists',
       message: 'value already exist in Weblate',
     });
-    mockFindTermId
-      .mockResolvedValueOnce(202)
-      .mockResolvedValueOnce(null);
+    mockListTermIdsByLanguage.set('pt', new Map([
+      ['button.save', 202],
+    ]));
     mockEditTerm.mockResolvedValue({ kind: 'success' });
 
     try {
@@ -314,11 +322,14 @@ describe('Fastlate extension integration flow', () => {
     mockCreateKey
       .mockResolvedValueOnce({ kind: 'created' })
       .mockResolvedValueOnce({ kind: 'created' });
-    mockFindTermId
-      .mockResolvedValueOnce(101)
-      .mockResolvedValueOnce(102)
-      .mockResolvedValueOnce(201)
-      .mockResolvedValueOnce(202);
+    mockListTermIdsByLanguage.set('pt', new Map([
+      ['button.save', 101],
+      ['button.cancel', 102],
+    ]));
+    mockListTermIdsByLanguage.set('en', new Map([
+      ['button.save', 201],
+      ['button.cancel', 202],
+    ]));
     mockEditTerm.mockResolvedValue({ kind: 'success' });
 
     try {
@@ -329,7 +340,7 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(2);
       expect(mockCreateKey).toHaveBeenNthCalledWith(1, 'button.save', 'Salvar');
       expect(mockCreateKey).toHaveBeenNthCalledWith(2, 'button.cancel', 'Cancelar');
-      expect(mockFindTermId).toHaveBeenCalledTimes(4);
+      expect(mockFindTermId).not.toHaveBeenCalled();
       expect(mockEditTerm).toHaveBeenCalledTimes(4);
       expect(mockEditTerm).toHaveBeenNthCalledWith(3, 201, 'Save');
       expect(mockEditTerm).toHaveBeenNthCalledWith(4, 202, 'Cancel');
@@ -350,11 +361,14 @@ describe('Fastlate extension integration flow', () => {
     mockCreateKey
       .mockResolvedValueOnce({ kind: 'created' })
       .mockResolvedValueOnce({ kind: 'created' });
-    mockFindTermId
-      .mockResolvedValueOnce(201)
-      .mockResolvedValueOnce(202)
-      .mockResolvedValueOnce(101)
-      .mockResolvedValueOnce(102);
+    mockListTermIdsByLanguage.set('en', new Map([
+      ['button.save', 201],
+      ['button.cancel', 202],
+    ]));
+    mockListTermIdsByLanguage.set('pt_BR', new Map([
+      ['button.save', 101],
+      ['button.cancel', 102],
+    ]));
     mockEditTerm.mockResolvedValue({ kind: 'success' });
 
     try {
@@ -365,7 +379,7 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(2);
       expect(mockCreateKey).toHaveBeenNthCalledWith(1, 'button.save', 'Salvar');
       expect(mockCreateKey).toHaveBeenNthCalledWith(2, 'button.cancel', 'Cancelar');
-      expect(mockFindTermId).toHaveBeenCalledTimes(4);
+      expect(mockFindTermId).not.toHaveBeenCalled();
       expect(mockEditTerm).toHaveBeenCalledTimes(4);
     } finally {
       removeFile(csvPath);
@@ -400,11 +414,10 @@ describe('Fastlate extension integration flow', () => {
     );
     mockWindow.showOpenDialog.mockResolvedValue([{ fsPath: csvPath }]);
     mockCreateKey.mockResolvedValueOnce({ kind: 'created' });
-    mockFindTermId
-      .mockResolvedValueOnce(101)
-      .mockResolvedValueOnce(201)
-      .mockResolvedValueOnce(301)
-      .mockResolvedValueOnce(401);
+    mockListTermIdsByLanguage.set('pt_BR', new Map([['bola', 101]]));
+    mockListTermIdsByLanguage.set('en', new Map([['bola', 201]]));
+    mockListTermIdsByLanguage.set('es', new Map([['bola', 301]]));
+    mockListTermIdsByLanguage.set('fr', new Map([['bola', 401]]));
     mockEditTerm.mockResolvedValue({ kind: 'success' });
 
     try {
@@ -417,7 +430,7 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(1);
       expect(mockCreateKey).toHaveBeenCalledWith('bola', 'bola');
       expect(mockCreateKeyLanguages).toEqual(['pt_BR']);
-      expect(mockFindTermId).toHaveBeenCalledTimes(4);
+      expect(mockFindTermId).not.toHaveBeenCalled();
       expect(mockEditTerm).toHaveBeenNthCalledWith(1, 101, 'bola');
       expect(mockEditTerm).toHaveBeenNthCalledWith(2, 201, 'ball');
       expect(mockEditTerm).toHaveBeenNthCalledWith(3, 301, 'pelota');

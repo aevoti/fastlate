@@ -31,9 +31,9 @@ export interface ImportJobOptions {
 /**
  * Orchestrates the sequential import of translation terms into Weblate.
  *
- * For each Term the job:
- *  1. Searches the target language for the exact key to obtain `unitId`
- *  2. PATCHes the term with the translation value when the unit exists
+ * The job:
+ *  1. Loads the target language unit IDs once into a key/id map
+ *  2. PATCHes each term with the translation value when the unit exists
  *  3. Updates `vscode.Progress` after each Term
  *  4. Respects `cancellationToken` — checked before each Term
  *
@@ -69,6 +69,11 @@ export class ImportJob {
     };
 
     const increment = terms.length > 0 ? 100 / terms.length : 0;
+    if (cancellationToken.isCancellationRequested) {
+      return summary;
+    }
+
+    const unitIdsByKey = await client.listTermIds();
 
     for (let i = 0; i < terms.length; i++) {
       // Requirement 6.5: respect cancellation — check before each Term.
@@ -78,8 +83,8 @@ export class ImportJob {
 
       const term = terms[i];
 
-      const unitId = await client.findTermId(term.key);
-      if (unitId === null) {
+      const unitId = unitIdsByKey.get(term.key);
+      if (unitId === undefined) {
         logger.error(
           `[row ${term.sourceRow}] key="${term.key}": exact term not found in language "${languageCode}" — skipping edit`
         );

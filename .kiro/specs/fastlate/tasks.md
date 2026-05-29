@@ -114,7 +114,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
   - [x] 6.1 Implementar `WeblateHttpClient` com lógica de retry
     - Criar `src/http/WeblateHttpClient.ts`
     - Implementar `createTerm()`: POST para `/api/translations/{project}/{component}/{language}/units/` com `Authorization: Token {token}`; retornar `{ kind: 'created', unitId }` para HTTP 201, `{ kind: 'already_exists', message? }` para HTTP 400 com chave duplicada (incluindo qualquer mensagem do corpo que contenha `"already exist"`), `{ kind: 'auth_error' }` para 401/403, `{ kind: 'error' }` para outros
-    - Implementar `findTermId()`: GET para `/api/translations/.../units/?q=key:="{key}"` para buscar `unitId` de term existente com o operador de busca exata do Weblate
+    - Implementar listagem de IDs: GET para `/api/units/?q=project:="{project}" component:="{component}" language:="{language}"` para montar mapa `key -> id` por idioma
     - Implementar `editTerm()`: PATCH para `/api/units/{id}/` com `Authorization: Token {token}`; retornar `{ kind: 'success' }` para HTTP 200, `{ kind: 'not_found' }` para 404, `{ kind: 'auth_error' }` para 401/403, `{ kind: 'error' }` para outros
     - Implementar lógica de retry: timeout 10s, até 3 tentativas, intervalo 2s, apenas para erros de rede/timeout e HTTP 5xx
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 7.1, 7.2, 7.3_
@@ -157,7 +157,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
     - Implementar `run(options)` que processa cada Term sequencialmente:
       1. POST para criar term no idioma `defaultLanguage`, quando a coluna desse idioma existir → obtém `unitId`
       2. Se HTTP 201 → marca `created`, usa `unitId` retornado
-      3. Se HTTP 400 duplicado → marca `only_edited`, busca `unitId` via `findTermId()`
+      3. Se HTTP 400 duplicado → continua; antes dos PATCHes do idioma, monta mapa `key -> id` via listagem filtrada
       4. Se HTTP 401/403 → interrompe o job imediatamente
       5. Se outro erro → registra no logger, contabiliza como `error`, avança para próximo Term
       6. PATCH para editar term com o valor de tradução
@@ -178,7 +178,7 @@ Implementação incremental da extensão VSCode Fastlate em TypeScript. O plano 
   - [x]* 8.4 Escrever property test de sequência de chamadas de API (Property 6)
     - **Property 6: Sequência correta de chamadas de API por Term**
     - Gerar listas de N Terms onde todas as criações retornam sucesso
-    - Verificar que o job realiza exatamente N chamadas POST e N chamadas PATCH
+    - Verificar que o job realiza uma listagem de unidades por idioma e exatamente N chamadas PATCH
     - **Validates: Requirements 4.1, 5.1**
 
   - [x]* 8.5 Escrever property test de correção do resumo final (Property 7)
