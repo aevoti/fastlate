@@ -49,6 +49,10 @@ function readFastlateSetting(field: keyof Omit<WeblateConfiguration, 'authToken'
   return rootConfig.get<string>(`fastlate.${field}`);
 }
 
+function requireStringSetting(field: keyof Omit<WeblateConfiguration, 'authToken'>): string {
+  return (readFastlateSetting(field) as string).trim();
+}
+
 /**
  * Reads and validates Fastlate settings plus the auth token loaded from SecretStorage.
  *
@@ -73,10 +77,10 @@ export class ConfigurationService {
     }
     const trimmedAuthToken = authToken.trim();
 
-    const serverUrl = readFastlateSetting('serverUrl') as string;
-    const project = readFastlateSetting('project') as string;
-    const component = readFastlateSetting('component') as string;
-    const defaultLanguage = readFastlateSetting('defaultLanguage') as string;
+    const serverUrl = requireStringSetting('serverUrl');
+    const project = requireStringSetting('project');
+    const component = requireStringSetting('component');
+    const defaultLanguage = requireStringSetting('defaultLanguage');
 
     if (!isValidUrl(serverUrl)) {
       return { ok: false, error: { kind: 'invalid_url', value: serverUrl } };

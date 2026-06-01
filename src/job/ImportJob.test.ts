@@ -67,14 +67,13 @@ function runJob(options: {
 describe('ImportJob', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockClient.listTermIds.mockResolvedValue(new Map([
-      ['button.save', 101],
-      ['button.cancel', 102],
-      ['button.ok', 103],
-    ]));
+    mockClient.findTermId
+      .mockResolvedValueOnce(101)
+      .mockResolvedValueOnce(102)
+      .mockResolvedValueOnce(103);
   });
 
-  it('loads unit ids once and edits all terms without creating them', async () => {
+  it('looks up each term by key and edits all found terms', async () => {
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const progress = createProgress();
@@ -87,18 +86,21 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
-    expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
-    expect(mockClient.findTermId).not.toHaveBeenCalled();
+    expect(mockClient.listTermIds).not.toHaveBeenCalled();
+    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
+    expect(mockClient.findTermId).toHaveBeenNthCalledWith(1, 'button.save');
+    expect(mockClient.findTermId).toHaveBeenNthCalledWith(2, 'button.cancel');
+    expect(mockClient.findTermId).toHaveBeenNthCalledWith(3, 'button.ok');
     expect(mockClient.editTerm).toHaveBeenCalledTimes(3);
     expect(progress.report).toHaveBeenCalledTimes(3);
   });
 
   it('edits existing terms and reports onlyEdited = N', async () => {
-    mockClient.listTermIds.mockResolvedValue(new Map([
-      ['button.save', 201],
-      ['button.cancel', 202],
-      ['button.ok', 203],
-    ]));
+    mockClient.findTermId
+      .mockReset()
+      .mockResolvedValueOnce(201)
+      .mockResolvedValueOnce(202)
+      .mockResolvedValueOnce(203);
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const summary = await runJob();
@@ -110,17 +112,17 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
-    expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
-    expect(mockClient.findTermId).not.toHaveBeenCalled();
+    expect(mockClient.listTermIds).not.toHaveBeenCalled();
+    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
     expect(mockClient.editTerm).toHaveBeenCalledTimes(3);
   });
 
-  it('uses loaded unit ids when editing terms without creating', async () => {
-    mockClient.listTermIds.mockResolvedValue(new Map([
-      ['button.save', 301],
-      ['button.cancel', 302],
-      ['button.ok', 303],
-    ]));
+  it('uses looked up unit ids when editing terms without creating', async () => {
+    mockClient.findTermId
+      .mockReset()
+      .mockResolvedValueOnce(301)
+      .mockResolvedValueOnce(302)
+      .mockResolvedValueOnce(303);
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const job = new ImportJob();
@@ -140,16 +142,17 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
-    expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
-    expect(mockClient.findTermId).not.toHaveBeenCalled();
+    expect(mockClient.listTermIds).not.toHaveBeenCalled();
+    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
     expect(mockClient.editTerm).toHaveBeenCalledTimes(3);
   });
 
   it('counts missing unit ids and continues with the next term', async () => {
-    mockClient.listTermIds.mockResolvedValue(new Map([
-      ['button.cancel', 102],
-      ['button.ok', 103],
-    ]));
+    mockClient.findTermId
+      .mockReset()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(102)
+      .mockResolvedValueOnce(103);
     mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
     const logger = createLogger();
@@ -162,6 +165,7 @@ describe('ImportJob', () => {
       errors: 1,
       failedKeys: ['button.save'],
     });
+    expect(mockClient.findTermId).toHaveBeenCalledTimes(3);
     expect(mockClient.editTerm).toHaveBeenCalledTimes(2);
     expect(logger.error).toHaveBeenCalledTimes(1);
   });
@@ -207,6 +211,7 @@ describe('ImportJob', () => {
       errors: 0,
       failedKeys: [],
     });
+    expect(mockClient.findTermId).not.toHaveBeenCalled();
     expect(mockClient.listTermIds).not.toHaveBeenCalled();
     expect(mockClient.editTerm).not.toHaveBeenCalled();
   });

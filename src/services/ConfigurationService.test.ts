@@ -67,6 +67,29 @@ describe('ConfigurationService', () => {
     }
   });
 
+  it('trims configured values before returning the Weblate configuration', () => {
+    setupConfig({
+      serverUrl: '  https://weblate.example.com  ',
+      authToken: '  my-secret-token  ',
+      project: '  my-project  ',
+      component: '\tmy-component\n',
+      defaultLanguage: '  pt_BR  ',
+    });
+
+    const result = service.readConfiguration(getMock('authToken'));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual({
+        serverUrl: 'https://weblate.example.com',
+        authToken: 'my-secret-token',
+        project: 'my-project',
+        component: 'my-component',
+        defaultLanguage: 'pt_BR',
+      });
+    }
+  });
+
   it('reads settings from full fastlate.* keys when scoped values are empty', () => {
     const scopedGet = jest.fn((key: string) => (key === 'serverUrl' ? '' : undefined));
     const rootValues: Record<string, string> = {

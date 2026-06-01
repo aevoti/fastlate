@@ -78,11 +78,12 @@ describe('Property 7: Correção do resumo final', () => {
         mockClient.listTermIds.mockReset();
         mockClient.editTerm.mockReset();
 
-        mockClient.listTermIds.mockResolvedValue(new Map(
-          runCase
+        mockClient.findTermId.mockImplementation(async (key) => {
+          const index = runCase
             .filter((item) => item.outcome === 'onlyEdited')
-            .map((item, index) => [item.term.key, index + 1]),
-        ));
+            .findIndex((item) => item.term.key === key);
+          return index === -1 ? null : index + 1;
+        });
         mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
         const terms = runCase.map(({ term }) => term);
@@ -99,6 +100,8 @@ describe('Property 7: Correção do resumo final', () => {
             .filter((key, index, keys) => keys.indexOf(key) === index),
         });
         expect(summary.created + summary.onlyEdited + summary.errors).toBe(summary.total);
+        expect(mockClient.listTermIds).not.toHaveBeenCalled();
+        expect(mockClient.findTermId).toHaveBeenCalledTimes(runCase.length);
         expect(mockClient.editTerm).toHaveBeenCalledTimes(
           summary.onlyEdited,
         );

@@ -52,21 +52,22 @@ function createJobOptions(terms: Term[]) {
   };
 }
 
-describe('Property 6: Sequência correta de chamadas de API por Term', () => {
+describe('Property 6: correct API call sequence per Term', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('realiza uma busca em lote e N chamadas de edição para N terms criados previamente', async () => {
+  it('performs one exact key lookup and one edit for each found term', async () => {
     await fc.assert(
       fc.asyncProperty(termsArb, async (terms) => {
         mockClient.findTermId.mockReset();
         mockClient.listTermIds.mockReset();
         mockClient.editTerm.mockReset();
 
-        mockClient.listTermIds.mockResolvedValue(new Map(
-          terms.map((term, index) => [term.key, index + 1]),
-        ));
+        mockClient.findTermId.mockImplementation(async (key) => {
+          const index = terms.findIndex((term) => term.key === key);
+          return index === -1 ? null : index + 1;
+        });
         mockClient.editTerm.mockResolvedValue({ kind: 'success' });
 
         const summary = await new ImportJob().run(createJobOptions(terms));
@@ -77,11 +78,12 @@ describe('Property 6: Sequência correta de chamadas de API por Term', () => {
           onlyEdited: terms.length,
           errors: 0,
         });
-        expect(mockClient.listTermIds).toHaveBeenCalledTimes(1);
-        expect(mockClient.findTermId).not.toHaveBeenCalled();
+        expect(mockClient.listTermIds).not.toHaveBeenCalled();
+        expect(mockClient.findTermId).toHaveBeenCalledTimes(terms.length);
         expect(mockClient.editTerm).toHaveBeenCalledTimes(terms.length);
 
         terms.forEach((term, index) => {
+          expect(mockClient.findTermId).toHaveBeenNthCalledWith(index + 1, term.key);
           expect(mockClient.editTerm).toHaveBeenNthCalledWith(
             index + 1,
             index + 1,

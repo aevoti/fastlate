@@ -33,7 +33,13 @@ const mockCreateKeyLanguages: string[] = [];
       mockCreateKeyLanguages.push(languageCode);
       return mockCreateKey(...args);
     },
-    findTermId: mockFindTermId,
+    findTermId: (key: string) => {
+      const idsByKey = mockListTermIdsByLanguage.get(languageCode);
+      if (idsByKey !== undefined) {
+        return Promise.resolve(idsByKey.get(key) ?? null);
+      }
+      return mockFindTermId(key);
+    },
     listTermIds: jest.fn(() =>
       Promise.resolve(mockListTermIdsByLanguage.get(languageCode) ?? new Map([
         ['button.save', 100],
@@ -191,7 +197,9 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(2);
       expect(mockCreateKey).toHaveBeenNthCalledWith(1, 'button.save', 'Salvar');
       expect(mockCreateKey).toHaveBeenNthCalledWith(2, 'button.cancel', 'Cancelar');
-      expect(mockFindTermId).not.toHaveBeenCalled();
+      expect(mockFindTermId).toHaveBeenCalledTimes(2);
+      expect(mockFindTermId).toHaveBeenNthCalledWith(1, 'button.save');
+      expect(mockFindTermId).toHaveBeenNthCalledWith(2, 'button.cancel');
       expect(mockEditTerm).toHaveBeenCalledTimes(2);
       expect(WeblateHttpClient).toHaveBeenCalledWith(
         {
@@ -322,14 +330,12 @@ describe('Fastlate extension integration flow', () => {
     mockCreateKey
       .mockResolvedValueOnce({ kind: 'created' })
       .mockResolvedValueOnce({ kind: 'created' });
-    mockListTermIdsByLanguage.set('pt', new Map([
-      ['button.save', 101],
-      ['button.cancel', 102],
-    ]));
-    mockListTermIdsByLanguage.set('en', new Map([
-      ['button.save', 201],
-      ['button.cancel', 202],
-    ]));
+    mockFindTermId
+      .mockReset()
+      .mockResolvedValueOnce(101)
+      .mockResolvedValueOnce(102)
+      .mockResolvedValueOnce(201)
+      .mockResolvedValueOnce(202);
     mockEditTerm.mockResolvedValue({ kind: 'success' });
 
     try {
@@ -340,10 +346,24 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(2);
       expect(mockCreateKey).toHaveBeenNthCalledWith(1, 'button.save', 'Salvar');
       expect(mockCreateKey).toHaveBeenNthCalledWith(2, 'button.cancel', 'Cancelar');
-      expect(mockFindTermId).not.toHaveBeenCalled();
+      expect(mockFindTermId).toHaveBeenCalledTimes(4);
+      expect(mockFindTermId).toHaveBeenNthCalledWith(1, 'button.save');
+      expect(mockFindTermId).toHaveBeenNthCalledWith(2, 'button.cancel');
+      expect(mockFindTermId).toHaveBeenNthCalledWith(3, 'button.save');
+      expect(mockFindTermId).toHaveBeenNthCalledWith(4, 'button.cancel');
       expect(mockEditTerm).toHaveBeenCalledTimes(4);
+      expect(mockEditTerm).toHaveBeenNthCalledWith(1, 101, 'Salvar');
+      expect(mockEditTerm).toHaveBeenNthCalledWith(2, 102, 'Cancelar');
       expect(mockEditTerm).toHaveBeenNthCalledWith(3, 201, 'Save');
       expect(mockEditTerm).toHaveBeenNthCalledWith(4, 202, 'Cancel');
+      expect(mockCreateKey.mock.invocationCallOrder[1]).toBeLessThan(
+        mockFindTermId.mock.invocationCallOrder[0],
+      );
+      for (let i = 0; i < 4; i++) {
+        expect(mockFindTermId.mock.invocationCallOrder[i]).toBeLessThan(
+          mockEditTerm.mock.invocationCallOrder[i],
+        );
+      }
       expect(mockWindow.showInformationMessage).toHaveBeenCalledWith(
         expect.stringContaining('Total: 4 | Criados: 2 | Somente editados: 4 | Erros: 0'),
       );
@@ -379,7 +399,6 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(2);
       expect(mockCreateKey).toHaveBeenNthCalledWith(1, 'button.save', 'Salvar');
       expect(mockCreateKey).toHaveBeenNthCalledWith(2, 'button.cancel', 'Cancelar');
-      expect(mockFindTermId).not.toHaveBeenCalled();
       expect(mockEditTerm).toHaveBeenCalledTimes(4);
     } finally {
       removeFile(csvPath);
@@ -430,7 +449,6 @@ describe('Fastlate extension integration flow', () => {
       expect(mockCreateKey).toHaveBeenCalledTimes(1);
       expect(mockCreateKey).toHaveBeenCalledWith('bola', 'bola');
       expect(mockCreateKeyLanguages).toEqual(['pt_BR']);
-      expect(mockFindTermId).not.toHaveBeenCalled();
       expect(mockEditTerm).toHaveBeenNthCalledWith(1, 101, 'bola');
       expect(mockEditTerm).toHaveBeenNthCalledWith(2, 201, 'ball');
       expect(mockEditTerm).toHaveBeenNthCalledWith(3, 301, 'pelota');

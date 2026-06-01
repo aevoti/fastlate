@@ -105,11 +105,38 @@ Fluxo de importação:
 - Se o Weblate retornar HTTP 400 com qualquer mensagem de resposta contendo `already exist`, o Fastlate registra um aviso e continua.
 - Se o CSV não tiver uma coluna cujo código seja igual a `fastlate.defaultLanguage`, o Fastlate interrompe a importação com o erro `Coluna com idioma padrão não encontrada`.
 - O Fastlate nunca envia `POST` de criação de chave para endpoints de idiomas diferentes do idioma padrão configurado.
-- Para cada idioma com valores preenchidos, o Fastlate lista os IDs das unidades uma vez com `GET /api/units/?q=project:="{project}" component:="{component}" language:="{language}"` e monta um mapa `chave -> id`.
-- O Fastlate só envia `PATCH` depois que a chave exata existe no mapa daquele idioma.
+- Para cada valor preenchido, o Fastlate busca a unidade com `GET /api/translations/{project}/{component}/{language}/units/?q=key:="{key}"`.
+- O Fastlate só envia `PATCH` depois que a chave exata é encontrada naquele idioma.
 - Se a chave exata não for encontrada para um idioma, o Fastlate ignora aquele valor e registra um erro.
 - Depois que a importação começa, o preview permanece aberto para conferência.
 - Se algum valor falhar, a notificação final inclui as chaves afetadas.
+
+Estimativa de limite de requisições:
+
+Como o fluxo faz `1 POST` por chave no idioma padrão e, para cada valor preenchido, faz `1 GET` mais `1 PATCH`, a estimativa é:
+
+```txt
+requisições = chaves + (valores preenchidos × 2)
+```
+
+Quando todas as chaves têm valor em todos os idiomas:
+
+```txt
+requisições = chaves × (1 + 2 × idiomas)
+chaves por hora = limite por hora / (1 + 2 × idiomas)
+```
+
+Exemplo com limite de 5000 requisições por hora:
+
+| Idiomas no CSV | Requisições por chave | Chaves por hora |
+|----------------|-----------------------|-----------------|
+| 1 | 3 | 1666 |
+| 2 | 5 | 1000 |
+| 3 | 7 | 714 |
+| 4 | 9 | 555 |
+| 5 | 11 | 454 |
+
+Use uma margem abaixo do limite quando houver retries, erros temporários ou valores ausentes/preenchidos de forma irregular.
 
 ```mermaid
 flowchart TD
@@ -121,15 +148,14 @@ flowchart TD
   F -- "Sim" --> G["POST das chaves de origem apenas no idioma padrão"]
   F -- "Não" --> H["Erro: coluna com idioma padrão não encontrada"]
   G --> I["Para cada coluna de idioma"]
-  I --> J["GET /api/units filtrado por projeto, componente e idioma"]
-  J --> K["Montar mapa chave -> id"]
-  K --> L["Para cada valor preenchido"]
-  L --> M{"Chave exata encontrada no mapa?"}
+  I --> J["Para cada valor preenchido"]
+  J --> K["GET /api/translations/.../units filtrado por key"]
+  K --> M{"Chave exata encontrada?"}
   M -- "Não" --> N["Registrar erro e ignorar valor"]
   M -- "Sim" --> O["PATCH da unidade com o valor"]
   O --> P["Registrar valor editado"]
   N --> Q{"Há mais valores?"}
   P --> Q
-  Q -- "Sim" --> L
+  Q -- "Sim" --> J
   Q -- "Não" --> R["Mostrar resumo final com chaves que falharam"]
 ```
