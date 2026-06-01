@@ -1,5 +1,7 @@
 # Fastlate
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lucas081297/fastlate/badge)](https://scorecard.dev/viewer/?uri=github.com/{owner}/{repo})
+
 Extensão VSCode para importar traduções de arquivos CSV para o Weblate.
 
 ## Começando
