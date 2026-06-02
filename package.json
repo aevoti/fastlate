@@ -7,6 +7,10 @@
   "icon": "fastlate.png",
   "publisher": "fastlate",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucas081297/fastlate.git"
+  },
   "main": "./out/extension.js",
   "engines": {
     "vscode": "^1.85.0"
@@ -84,6 +88,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
+    "package:vsix": "vsce package",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -100,6 +105,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "3.9.1",
     "eslint": "^8.57.1",
     "fast-check": "^4.8.0",
     "jest": "29.7.0",

@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+permissions: read-all
+
+jobs:
+  package:
+    name: Package and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Run tests
+        run: npm test
+
+      - name: Set package name
+        run: |
+          node -e "const p = require('./package.json'); console.log('VSIX_NAME=' + p.name + '-' + p.version + '.vsix')" >> "$GITHUB_ENV"
+
+      - name: Package VSIX
+        run: npm run package:vsix -- --out "$VSIX_NAME"
+
+      - name: Generate checksum
+        run: sha256sum "$VSIX_NAME" > SHA256SUMS
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$VSIX_NAME" SHA256SUMS --title "$GITHUB_REF_NAME" --notes "Release $GITHUB_REF_NAME" --verify-tag

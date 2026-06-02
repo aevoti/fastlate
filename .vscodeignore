@@ -1,0 +1,17 @@
+.github/**
+.kiro/**
+.vscode/**
+coverage/**
+node_modules/**
+src/**
+test/**
+.env
+.env.*
+.eslintrc
+.gitignore
+.vscodeignore
+jest.config.ts
+package-lock.json
+tsconfig.json
+*.log
+*.vsix
