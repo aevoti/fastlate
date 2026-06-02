@@ -1,0 +1,7 @@
+# Default owner for all repository changes.
+* @lucas081297
+
+# Security-sensitive project automation and dependency metadata.
+.github/ @lucas081297
+package.json @lucas081297
+package-lock.json @lucas081297
