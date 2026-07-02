@@ -26,6 +26,7 @@ export class PreviewPanel {
   private panel: vscode.WebviewPanel | undefined;
   private languageHeaders: LanguageHeader[] = [];
   private terms: Term[] = [];
+  private ignoredColumns: string[] = [];
 
   /**
    * Shows the preview panel with the parsed data and waits for the user's action.
@@ -35,9 +36,10 @@ export class PreviewPanel {
   show(options: PreviewOptions): Promise<'import' | 'cancel'> {
     return new Promise((resolve) => {
       const { parseResult } = options;
-      const { languageHeaders, terms } = parseResult;
+      const { languageHeaders, terms, ignoredColumns } = parseResult;
       this.languageHeaders = languageHeaders;
       this.terms = terms;
+      this.ignoredColumns = ignoredColumns;
 
       this.panel = vscode.window.createWebviewPanel(
         'fastlatePreview',
@@ -52,7 +54,8 @@ export class PreviewPanel {
       this.panel.webview.html = this._buildHtml(
         languageHeaders,
         terms,
-        { kind: 'ready' }
+        { kind: 'ready' },
+        ignoredColumns
       );
 
       let resolved = false;
@@ -109,7 +112,7 @@ export class PreviewPanel {
       return;
     }
 
-    this.panel.webview.html = this._buildHtml(this.languageHeaders, this.terms, state);
+    this.panel.webview.html = this._buildHtml(this.languageHeaders, this.terms, state, this.ignoredColumns);
   }
 
   /**
@@ -118,7 +121,8 @@ export class PreviewPanel {
   private _buildHtml(
     languageHeaders: LanguageHeader[],
     terms: Term[],
-    state: PreviewState = { kind: 'ready' }
+    state: PreviewState = { kind: 'ready' },
+    ignoredColumns: string[] = []
   ): string {
     const totalTerms = terms.length;
     const languageSummary = languageHeaders
@@ -307,7 +311,7 @@ export class PreviewPanel {
     <button id="btn-cancel"${cancelDisabled}>${this._escapeHtml(cancelButtonText)}</button>
   </div>
   <div id="import-status" class="${statusClass}" role="status" aria-live="polite">${this._escapeHtml(statusText)}</div>
-
+${this._buildIgnoredColumnsHtml(ignoredColumns)}
   <script>
     const vscode = acquireVsCodeApi();
     const importButton = document.getElementById('btn-import');
@@ -359,6 +363,36 @@ export class PreviewPanel {
   </script>
 </body>
 </html>`;
+  }
+
+  /**
+   * Builds the ignored-columns section HTML, or returns empty string if none.
+   */
+  private _buildIgnoredColumnsHtml(ignoredColumns: string[]): string {
+    if (ignoredColumns.length === 0) {
+      return '';
+    }
+
+    const maxVisible = 50;
+    const visibleColumns = ignoredColumns.slice(0, maxVisible);
+    const items = visibleColumns
+      .map((col) => `    <li>${this._escapeHtml(col)}</li>`)
+      .join('\n');
+
+    let moreIndicator = '';
+    if (ignoredColumns.length > maxVisible) {
+      const remaining = ignoredColumns.length - maxVisible;
+      moreIndicator = `\n    <li>+${remaining} more</li>`;
+    }
+
+    return `
+  <div class="ignored-columns">
+    <h2>${this._escapeHtml(t('preview.ignoredColumns'))}</h2>
+    <ul>
+${items}${moreIndicator}
+    </ul>
+  </div>
+`;
   }
 
   /**

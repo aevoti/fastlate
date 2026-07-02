@@ -54,19 +54,25 @@ function recordFailedKey(summary: ImportSummary, key: string): void {
   }
 }
 
-function buildSummaryMessage(summary: ImportSummary): string {
+export function buildSummaryMessage(summary: ImportSummary, ignoredColumns?: string[]): string {
   const failedKeys =
     summary.failedKeys.length === 0
       ? ''
       : ` | ${t('summary.failedKeys')}: ${summary.failedKeys.join(', ')}`;
 
-  return t('summary.done', {
+  let message = t('summary.done', {
     total: summary.total,
     created: summary.created,
     onlyEdited: summary.onlyEdited,
     errors: summary.errors,
     failedKeys,
   });
+
+  if (ignoredColumns && ignoredColumns.length > 0) {
+    message += '\n' + t('summary.ignoredColumns') + ': ' + ignoredColumns.join(', ');
+  }
+
+  return message;
 }
 
 async function createPrimaryKeys(options: {
@@ -413,7 +419,7 @@ async function runImportCommand(
   // -------------------------------------------------------------------------
   // Step 6: Display the final summary (Requirements 6.3, 6.4)
   // -------------------------------------------------------------------------
-  const summaryMessage = buildSummaryMessage(summary);
+  const summaryMessage = buildSummaryMessage(summary, parseResult.value.ignoredColumns);
 
   log.info(summaryMessage);
   log.show();

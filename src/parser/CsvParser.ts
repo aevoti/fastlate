@@ -2,6 +2,9 @@ import * as fs from 'fs';
 import * as Papa from 'papaparse';
 import type { ParseResult, ParseError, Result, Term, LanguageHeader, TermValue } from '../types/index';
 
+/** Column names that are recognized as metadata and excluded from language processing. */
+const IGNORED_COLUMN_NAMES: readonly string[] = ['local', 'seção'];
+
 /** Optional logger interface for warnings during parsing. */
 export interface ParserLogger {
   warn(message: string): void;
@@ -95,6 +98,9 @@ export class CsvParser {
     );
 
     const languageHeaders: LanguageHeader[] = [];
+    const ignoredColumns: string[] = [];
+    const ignoredIndices: Set<number> = new Set();
+    const languageColumnIndices: number[] = [];
     const headerColumnCount = Math.max(row1.length, row2.length);
 
     for (let columnIndex = languageStartColumn; columnIndex < headerColumnCount; columnIndex++) {
@@ -105,11 +111,19 @@ export class CsvParser {
         continue;
       }
 
+      // Check if this column is in the ignored list
+      if (IGNORED_COLUMN_NAMES.includes(langName.toLowerCase())) {
+        ignoredColumns.push(langName);
+        ignoredIndices.add(columnIndex);
+        continue;
+      }
+
       if (langName === '' || langCode === '') {
         return { ok: false, error: { kind: 'missing_language_header' } };
       }
 
       languageHeaders.push({ name: langName, code: langCode });
+      languageColumnIndices.push(columnIndex);
     }
 
     if (languageHeaders.length === 0) {
@@ -146,7 +160,7 @@ export class CsvParser {
       const values: TermValue[] = languageHeaders
         .map((language, languageIndex) => ({
           language,
-          value: (row[languageStartColumn + languageIndex] ?? '').trim(),
+          value: (row[languageColumnIndices[languageIndex]] ?? '').trim(),
         }));
 
       const key =
@@ -176,7 +190,7 @@ export class CsvParser {
       return { ok: false, error: { kind: 'empty_spreadsheet' } };
     }
 
-    return { ok: true, value: { languageHeader, languageHeaders, terms } };
+    return { ok: true, value: { languageHeader, languageHeaders, terms, ignoredColumns } };
   }
 
   private _looksLikeLanguageCode(value: string): boolean {

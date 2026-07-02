@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0",
+  "enabled": true,
+  "name": "Atualizar README",
+  "description": "Atualizar README",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Se necessário, Atualize  o README com as moficações anteriormente realizadas"
+  },
+  "workspaceFolderName": "fastlate",
+  "shortName": "atualizar-readme"
+}
