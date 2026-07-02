@@ -6,10 +6,10 @@
   "displayName": "Fastlate",
   "icon": "fastlate.png",
   "publisher": "fastlate",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lucas081297/fastlate.git"
+    "url": "https://github.com/aevoti/fastlate.git"
   },
   "main": "./out/extension.js",
   "engines": {
@@ -89,7 +89,6 @@
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
     "package:vsix": "vsce package",
-    "publish:marketplace": "vsce publish",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
