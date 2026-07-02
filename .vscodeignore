@@ -2,7 +2,6 @@
 .kiro/**
 .vscode/**
 coverage/**
-node_modules/**
 src/**
 test/**
 .env
