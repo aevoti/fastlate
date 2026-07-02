@@ -113,6 +113,7 @@ describe('PreviewPanel', () => {
           languageHeader: sampleLanguages[0],
           languageHeaders: sampleLanguages,
           terms: sampleTerms,
+          ignoredColumns: [],
         },
         extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\fastlate\\packages\\fastlate') as never,
       });
@@ -141,6 +142,7 @@ describe('PreviewPanel', () => {
           languageHeader: sampleLanguages[0],
           languageHeaders: sampleLanguages,
           terms: sampleTerms,
+          ignoredColumns: [],
         },
         extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\fastlate\\packages\\fastlate') as never,
       });
@@ -170,6 +172,7 @@ describe('PreviewPanel', () => {
           languageHeader: sampleLanguages[0],
           languageHeaders: sampleLanguages,
           terms: sampleTerms,
+          ignoredColumns: [],
         },
         extensionUri: vscode.Uri.file('C:\\GitHub_Repos\\fastlate\\packages\\fastlate') as never,
       });

@@ -87,6 +87,36 @@ bola;ball;pelota;balle
 
 No formato somente com idiomas, o valor da coluna configurada em `fastlate.defaultLanguage` é usado como chave no Weblate. Se `fastlate.defaultLanguage` estiver configurado como `pt_BR`, no exemplo acima `bola` é a chave.
 
+### Colunas ignoradas
+
+Colunas cujo nome na linha 1 seja **"Local"** ou **"Seção"** (comparação case-insensitive, com trim de espaços) são reconhecidas como metadados e automaticamente excluídas do processamento de idiomas. Elas não aparecem como colunas de idioma no preview nem geram chamadas de API.
+
+- O preview exibe uma seção "Colunas ignoradas" listando os nomes originais das colunas excluídas.
+- O resumo final de importação também lista as colunas ignoradas.
+- Se **todas** as colunas não-chave forem ignoradas (nenhuma coluna de idioma restar), o Fastlate retorna o erro `missing_language_header`.
+
+Exemplo de CSV com colunas ignoradas:
+
+```csv
+label;Local;Português;Seção;English
+code;xx;pt;xx;en
+button.save;tela1;Salvar;botões;Save
+```
+
+Neste exemplo, "Local" e "Seção" são ignoradas e apenas "Português" e "English" são processadas como idiomas.
+
+### Valores com ponto e vírgula
+
+Como o delimitador do CSV é `;`, valores que contenham ponto e vírgula literal devem estar **entre aspas** no arquivo (padrão RFC 4180). A maioria dos editores de planilha (Excel, Google Sheets, LibreOffice) faz isso automaticamente ao exportar. Em CSVs editados manualmente, certifique-se de usar quoting:
+
+```csv
+label;Português;English
+code;pt;en
+greeting;"Olá; bem-vindo";Hello
+```
+
+Se o valor não estiver entre aspas, o `;` será interpretado como separador de coluna e a linha ficará desalinhada.
+
 Regras:
 
 - No formato com chave dedicada, a coluna A é a chave de tradução e as colunas B em diante são colunas de idioma.

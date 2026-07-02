@@ -46,8 +46,10 @@ type MessageKey =
   | 'error.auth'
   | 'error.unexpectedImport'
   | 'progress.importing'
+  | 'preview.ignoredColumns'
   | 'summary.failedKeys'
-  | 'summary.done';
+  | 'summary.done'
+  | 'summary.ignoredColumns';
 
 type MessageParams = Record<string, string | number>;
 
@@ -97,8 +99,10 @@ const en: Record<MessageKey, string> = {
   'error.auth': 'Fastlate: authentication failed - check the token saved with "Fastlate: Configure token".',
   'error.unexpectedImport': 'Fastlate: unexpected error during import - {message}',
   'progress.importing': 'Fastlate: importing translations...',
+  'preview.ignoredColumns': 'Ignored columns',
   'summary.failedKeys': 'Failed keys',
   'summary.done': 'Fastlate: import completed. Total: {total} | Created: {created} | Edited only: {onlyEdited} | Errors: {errors}{failedKeys}',
+  'summary.ignoredColumns': 'Ignored columns',
 };
 
 const pt: Record<MessageKey, string> = {
@@ -147,8 +151,10 @@ const pt: Record<MessageKey, string> = {
   'error.auth': 'Fastlate: falha de autenticação - verifique o token salvo com o comando "Fastlate: Configurar token".',
   'error.unexpectedImport': 'Fastlate: erro inesperado durante a importação - {message}',
   'progress.importing': 'Fastlate: importando traduções...',
+  'preview.ignoredColumns': 'Colunas ignoradas',
   'summary.failedKeys': 'Chaves com erro',
   'summary.done': 'Fastlate: importação concluída. Total: {total} | Criados: {created} | Somente editados: {onlyEdited} | Erros: {errors}{failedKeys}',
+  'summary.ignoredColumns': 'Colunas ignoradas',
 };
 
 function activeMessages(): Record<MessageKey, string> {

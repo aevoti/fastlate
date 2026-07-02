@@ -77,6 +77,8 @@ export interface ParseResult {
   languageHeaders: LanguageHeader[];
   /** All valid terms extracted from row 3 onwards. */
   terms: Term[];
+  /** Column names from row 1 that were recognized as metadata and excluded. */
+  ignoredColumns: string[];
 }
 
 /** Errors that can occur while parsing a spreadsheet file. */
