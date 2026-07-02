@@ -2,49 +2,38 @@
 
 Extensão VSCode para importar traduções de arquivos CSV para o Weblate.
 
-## Começando
+---
 
-```bash
-npm install
+## Instalação
 
-npm run compile
+### 1. Instalar a extensão
 
-npm run test
-```
+Baixe o arquivo `.vsix` mais recente e instale no VSCode:
 
-## Requisitos
+- Abra o VSCode → Extensions → menu `...` → `Install from VSIX...` → selecione o arquivo `.vsix`
 
-- Node.js >= 18
-- npm >= 9
-
-## Instalando o Fastlate localmente
-
-Gere e instale a extensão como um pacote local `.vsix` do VSCode:
+Ou via terminal:
 
 ```powershell
-cd C:\GitHub_Repos\Fastlate
-npx vsce package
 code --install-extension fastlate-0.0.1.vsix
 ```
 
-Se o `vsce` não estiver disponível, instale antes:
+### 2. Configurar
 
-```powershell
-npm install -g @vscode/vsce
-```
+Depois de instalar, configure estas opções no `settings.json` do VSCode:
 
-Também é possível instalar o `.vsix` gerado pelo VSCode: abra Extensions, clique no menu `...`, escolha `Install from VSIX...` e selecione o arquivo gerado.
-
-Depois de instalar, configure estas opções do VSCode:
-
-- `fastlate.serverUrl`
-- `fastlate.project`
-- `fastlate.component`
-- `fastlate.defaultLanguage` (obrigatório; o CSV deve conter esta coluna, que serve como idioma fonte das chaves e é a única usada para criar chaves via `POST`)
+- `fastlate.serverUrl` — URL base do servidor Weblate
+- `fastlate.project` — slug do projeto no Weblate
+- `fastlate.component` — slug do componente no Weblate
+- `fastlate.defaultLanguage` — código do idioma padrão (obrigatório; o CSV deve conter esta coluna, que serve como idioma fonte das chaves)
 
 Configure o token com o comando `Fastlate: Configurar token`. O token é salvo no `SecretStorage` do VSCode, não no `settings.json`. Para remover o token salvo, use `Fastlate: Remover token`.
 
-Em seguida, use a view `Fastlate` na Activity Bar ou execute o comando `Fastlate: Importar Traduções`.
+### 3. Usar
+
+Use a view `Fastlate` na Activity Bar ou execute o comando `Fastlate: Importar Traduções`.
+
+---
 
 ## Referência de CSV do Fastlate
 
@@ -115,7 +104,7 @@ greeting;"Olá; bem-vindo";Hello
 
 Se o valor não estiver entre aspas, o `;` será interpretado como separador de coluna e a linha ficará desalinhada.
 
-Regras:
+### Regras do CSV
 
 - No formato com chave dedicada, a coluna A é a chave de tradução e as colunas B em diante são colunas de idioma.
 - No formato somente com idiomas, as colunas A em diante são colunas de idioma.
@@ -128,7 +117,7 @@ Regras:
 
 O preview de importação mostra `Chave` mais uma coluna de valor para cada idioma declarado no cabeçalho.
 
-Fluxo de importação:
+### Fluxo de importação
 
 - O Fastlate envia `POST` somente para criar a chave de origem no idioma configurado em `fastlate.defaultLanguage`.
 - O corpo do `POST` de criação contém a chave e o valor da coluna do idioma padrão.
@@ -141,7 +130,7 @@ Fluxo de importação:
 - Depois que a importação começa, o preview permanece aberto para conferência.
 - Se algum valor falhar, a notificação final inclui as chaves afetadas.
 
-Estimativa de limite de requisições:
+### Estimativa de limite de requisições
 
 Como o fluxo faz `1 POST` por chave no idioma padrão e, para cada valor preenchido, faz `1 GET` mais `1 PATCH`, a estimativa é:
 
@@ -168,6 +157,8 @@ Exemplo com limite de 5000 requisições por hora:
 
 Use uma margem abaixo do limite quando houver retries, erros temporários ou valores ausentes/preenchidos de forma irregular.
 
+### Diagrama do fluxo
+
 ```mermaid
 flowchart TD
   A["Usuário seleciona o CSV"] --> B["Ler cabeçalhos de idioma e termos"]
@@ -189,3 +180,47 @@ flowchart TD
   Q -- "Sim" --> J
   Q -- "Não" --> R["Mostrar resumo final com chaves que falharam"]
 ```
+
+---
+
+## Manutenção (Desenvolvedores)
+
+### Requisitos
+
+- Node.js >= 18
+- npm >= 9
+
+### Setup do ambiente
+
+```bash
+npm install
+npm run compile
+npm run test
+```
+
+### Gerar o pacote .vsix
+
+```powershell
+npx vsce package
+```
+
+Se o `vsce` não estiver disponível globalmente:
+
+```powershell
+npm install -g @vscode/vsce
+```
+
+### Debug
+
+Abra o projeto no VSCode e pressione `F5`. Uma nova janela (Extension Development Host) será aberta com a extensão carregada. Breakpoints funcionam normalmente.
+
+### Scripts disponíveis
+
+| Script | Descrição |
+|--------|-----------|
+| `npm run compile` | Compila o TypeScript |
+| `npm run watch` | Compila em modo watch |
+| `npm run lint` | Executa o ESLint |
+| `npm test` | Executa os testes com Jest |
+| `npm run test:coverage` | Testes com relatório de cobertura |
+| `npm run package:vsix` | Gera o arquivo `.vsix` |
