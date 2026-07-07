@@ -27,6 +27,14 @@ Depois de instalar, configure estas opções no `settings.json` do VSCode:
 - `fastlate.component` — slug do componente no Weblate
 - `fastlate.defaultLanguage` — código do idioma padrão (obrigatório; o CSV deve conter esta coluna, que serve como idioma fonte das chaves)
 
+Exemplo de configuração
+<img width="859" height="469" alt="image" src="https://github.com/user-attachments/assets/f27afad8-4f88-4d65-a091-06f97c00369a" />
+
+Obtenção do Token
+<img width="935" height="331" alt="image" src="https://github.com/user-attachments/assets/8d8b06d1-4b64-42b2-9b0c-eb0733dfaf33" />
+
+
+
 Configure o token com o comando `Fastlate: Configurar token`. O token é salvo no `SecretStorage` do VSCode, não no `settings.json`. Para remover o token salvo, use `Fastlate: Remover token`.
 
 ### 3. Usar
